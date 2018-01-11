@@ -1,0 +1,49 @@
+{
+  "name": "observable",
+  "version": "0.0.1",
+  "description": "observable",
+  "main": "dist/rx.common.js",
+  "module": "dist/rx.esm.js",
+  "scripts": {
+    "start": "",
+    "dev": "rollup -wm -c build/rollup.config.dev.js",
+    "build": "npm run clear && rollup -c build/rollup.config.js",
+    "clear": "shx rm -rf ./dist",
+    "lint": "eslint src test",
+    "test": "npm run test:unit",
+    "test:unit": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "lei.wang@wuage.com",
+  "license": "MIT",
+  "keywords": [
+    "observable"
+  ],
+  "devDependencies": {
+    "eslint": "^4.15.0",
+    "eslint-config-standard": "^11.0.0-beta.0",
+    "jest": "^22.0.5",
+    "rollup": "^0.53.4",
+    "rollup-plugin-buble": "^0.18.0",
+    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-uglify": "^2.0.1",
+    "shx": "^0.2.2"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "moduleNameMapper": {
+      "^@$": "<rootDir>/src",
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**"
+    ],
+    "setupFiles": [
+      "<rootDir>/test/unit/index"
+    ],
+    "coverageDirectory": "test/coverage"
+  }
+}
