@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta lang="zh">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="renderer" content="webkit">
+  <meta name="description" content="">
+  <meta name="keyword" content="">
+  <title></title>
+</head>
+<body>
+<script src="../dist/rx.js"></script>
+<script>
+var times = 0
+new Rx.Observable(function (observer) {
+  observer.next(0)
+  observer.next(0)
+  observer.next(0)
+  observer.next(0)
+  observer.next(0)
+  observer.next(0)
+  observer.next(0)
+})
+  .do(function (val) {
+    return times += 1
+  })
+  .do(function (val) {
+    return times += 1
+  })
+  .subscribe(function (val) {
+    if (times === 4) {
+      this.unsubscribe()
+    }
+  })
+console.log(times)
+</script>
+</body>
+</html>

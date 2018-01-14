@@ -2,6 +2,7 @@ const path$ = require('path')
 const buble = require('rollup-plugin-buble')
 const replace = require('rollup-plugin-replace')
 const uglify = require('rollup-plugin-uglify')
+const nodeResolve = require('rollup-plugin-node-resolve')
 
 const resolve = path => path$.resolve(__dirname, '../', path)
 
@@ -51,7 +52,8 @@ const getConfig = (opts) => {
       name: 'Rx'
     },
     plugins: [
-      buble()
+      buble(),
+      nodeResolve()
     ]
   }
 
