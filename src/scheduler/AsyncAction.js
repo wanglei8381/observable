@@ -74,7 +74,7 @@ export class AsyncAction extends Action {
     }
 
     if (id != null) {
-      this.id = this.recycleAsyncId(this.scheduler, id, null)
+      this.id = this.recycleAsyncId(scheduler, id, null)
     }
 
     this.delay = null
