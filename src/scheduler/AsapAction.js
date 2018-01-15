@@ -1,7 +1,4 @@
-import {
-  setImmediate,
-  clearImmediate
-} from '../utils'
+import { setImmediate, clearImmediate } from '../utils'
 import { AsyncAction } from './AsyncAction'
 export class AsapAction extends AsyncAction {
   requestAsyncId (scheduler, id, delay = 0) {
@@ -9,9 +6,12 @@ export class AsapAction extends AsyncAction {
       return super.requestAsyncId(scheduler, id, delay)
     }
     scheduler.actions.push(this)
-    return scheduler.scheduled || (scheduler.scheduled = setImmediate(
+    return (
+      scheduler.scheduled ||
+      (scheduler.scheduled = setImmediate(
         scheduler.flush.bind(scheduler, null)
       ))
+    )
   }
 
   recycleAsyncId (scheduler, id, delay = 0) {

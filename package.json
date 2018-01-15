@@ -12,7 +12,7 @@
     "lint": "eslint src test/unit",
     "test": "npm run test:unit",
     "test:unit": "jest",
-    "format": "prettier-eslint src/**/*.js test/unit/**/*.js --write *.js"
+    "format": "prettier-eslint --write src/**/*.js test/unit/**/*.js"
   },
   "repository": {
     "type": "git",

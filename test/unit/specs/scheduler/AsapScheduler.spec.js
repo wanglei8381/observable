@@ -1,6 +1,4 @@
-import {
-  Scheduler
-} from '@'
+import { Scheduler } from '@'
 import sinon from 'sinon'
 const asap = Scheduler.asap
 
@@ -24,7 +22,7 @@ describe('Scheduler.asap', () => {
     sandbox.restore()
   })
 
-  it('should schedule an action to happen later', (done) => {
+  it('should schedule an action to happen later', done => {
     var actionHappened = false
     asap.schedule(function () {
       actionHappened = true
@@ -38,26 +36,30 @@ describe('Scheduler.asap', () => {
   it('should execute recursively scheduled actions in separate asynchronous contexts', function (done) {
     var syncExec1 = true
     var syncExec2 = true
-    asap.schedule(function (index) {
-      if (index === 0) {
-        this.schedule(1)
-        asap.schedule(function () { syncExec1 = false })
-      }
-      else if (index === 1) {
-        this.schedule(2)
-        asap.schedule(function () { syncExec2 = false })
-      }
-      else if (index === 2) {
-        this.schedule(3)
-      }
-      else if (index === 3) {
-        if (!syncExec1 && !syncExec2) {
-          done()
+    asap.schedule(
+      function (index) {
+        if (index === 0) {
+          this.schedule(1)
+          asap.schedule(function () {
+            syncExec1 = false
+          })
+        } else if (index === 1) {
+          this.schedule(2)
+          asap.schedule(function () {
+            syncExec2 = false
+          })
+        } else if (index === 2) {
+          this.schedule(3)
+        } else if (index === 3) {
+          if (!syncExec1 && !syncExec2) {
+            done()
+          } else {
+            done(new Error('Execution happened synchronously.'))
+          }
         }
-        else {
-          done(new Error('Execution happened synchronously.'))
-        }
-      }
-    }, 0, 0)
+      },
+      0,
+      0
+    )
   })
 })

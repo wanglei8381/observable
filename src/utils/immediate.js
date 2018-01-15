@@ -1,6 +1,6 @@
 let id = 0
 const cache = {}
-export const setImmediate = (cb) => {
+export const setImmediate = cb => {
   id++
   cache[id] = cb
   Promise.resolve().then(() => {
@@ -13,6 +13,6 @@ export const setImmediate = (cb) => {
   return id
 }
 
-export const clearImmediate = (id) => {
+export const clearImmediate = id => {
   delete cache[id]
 }

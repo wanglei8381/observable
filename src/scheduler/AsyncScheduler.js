@@ -13,13 +13,13 @@ export class AsyncScheduler extends Scheduler {
     this.active = true
     let error
     do {
-      if (error = action.execute(action.state, action.delay)) {
+      if ((error = action.execute(action.state, action.delay))) {
         break
       }
-    } while (action = actions.shift())
+    } while ((action = actions.shift()))
     this.active = false
     if (error) {
-      while (action = actions.shift()) {
+      while ((action = actions.shift())) {
         action.unsubscribe()
       }
       throw error

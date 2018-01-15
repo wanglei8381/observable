@@ -1,6 +1,4 @@
-import {
-  isFunction
-} from './utils'
+import { isFunction } from './utils'
 export class Subscription {
   constructor () {
     this._closed = false

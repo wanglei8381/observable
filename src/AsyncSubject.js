@@ -1,3 +1,2 @@
 import Subject from './Subject'
-class AsyncSubject extends Subject {
-}
+export class AsyncSubject extends Subject {}

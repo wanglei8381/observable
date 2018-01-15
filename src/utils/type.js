@@ -1,5 +1,5 @@
 const objectProto = Object.prototype
-const toString = (obj) => objectProto.toString.call(obj)
+const toString = obj => objectProto.toString.call(obj)
 
 export function isNull (obj) {
   return obj === null
@@ -106,7 +106,12 @@ const MAX_SAFE_INTEGER = 9007199254740991
  *
  */
 export function isLength (value) {
-  return typeof value === 'number' && value > -1 && value <= MAX_SAFE_INTEGER && value % 1 === 0
+  return (
+    typeof value === 'number' &&
+    value > -1 &&
+    value <= MAX_SAFE_INTEGER &&
+    value % 1 === 0
+  )
 }
 
 export function isArrayLike (obj) {
@@ -131,10 +136,12 @@ export function isFunction (obj) {
   }
 
   const tag = toString(obj)
-  return tag === '[object Function]' ||
+  return (
+    tag === '[object Function]' ||
     tag === '[object AsyncFunction]' ||
     tag === '[object GeneratorFunction]' ||
     tag === '[object Proxy]'
+  )
 }
 
 export function isMap (obj) {
@@ -159,9 +166,8 @@ export function isRegExp (obj) {
 
 export function isError (obj) {
   const tag = toString(obj)
-  return isObjectLike(obj) &&
-    (
-      tag === '[object Error]' ||
-      tag === '[object DOMException]'
-    )
+  return (
+    isObjectLike(obj) &&
+    (tag === '[object Error]' || tag === '[object DOMException]')
+  )
 }

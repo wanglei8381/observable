@@ -1,3 +1,2 @@
 import Subject from './Subject'
-class ReplaySubject extends Subject {
-}
+export class ReplaySubject extends Subject {}

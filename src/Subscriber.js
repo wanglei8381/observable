@@ -1,8 +1,4 @@
-import {
-  isNil,
-  isFunction,
-  isObjectLike
-} from './utils'
+import { isNil, isFunction, isObjectLike } from './utils'
 import { Subscription } from './Subscription'
 export class Subscriber extends Subscription {
   constructor (next, error, complete) {

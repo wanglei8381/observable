@@ -1,3 +1,2 @@
 import Subject from './Subject'
-class BehaviorSubject extends Subject {
-}
+export class BehaviorSubject extends Subject {}

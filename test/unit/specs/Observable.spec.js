@@ -1,8 +1,4 @@
-import {
-  Observable,
-  Subscription,
-  toSubscriber
-} from '@'
+import { Observable, Subscription, toSubscriber } from '@'
 
 expect.extend({
   type (received, argument) {
@@ -31,9 +27,13 @@ describe('Observable', () => {
       observer.complete()
     })
     const fn = jest.fn()
-    source.subscribe(x => {
-      expect(x).toBe(1)
-    }, null, fn)
+    source.subscribe(
+      x => {
+        expect(x).toBe(1)
+      },
+      null,
+      fn
+    )
     expect(fn).toHaveBeenCalled()
   })
 
@@ -64,13 +64,17 @@ describe('subscribe', () => {
     expect(subscribed).toBeFalsy()
     let mutatedByNext = false
     let mutatedByComplete = false
-    source.subscribe(function (x) {
-      nexted = x
-      mutatedByNext = true
-    }, null, function () {
-      completed = true
-      mutatedByComplete = true
-    })
+    source.subscribe(
+      function (x) {
+        nexted = x
+        mutatedByNext = true
+      },
+      null,
+      function () {
+        completed = true
+        mutatedByComplete = true
+      }
+    )
     expect(mutatedByNext).toBeTruthy()
     expect(mutatedByComplete).toBeTruthy()
   })
@@ -93,12 +97,11 @@ describe('subscribe', () => {
     })
     try {
       source.subscribe()
-    } catch (e) {
-    }
+    } catch (e) {}
     expect(unsubscribeCalled).toBeTruthy()
   })
 
-  it('当一个错误异步发出且无参数调用subscribe时，应该执行unsubscription', (done) => {
+  it('当一个错误异步发出且无参数调用subscribe时，应该执行unsubscription', done => {
     var unsubscribeCalled = false
     var id
     var source = new Observable(function (observer) {
@@ -160,7 +163,9 @@ describe('subscribe', () => {
       }
     })
     try {
-      sub = source.subscribe(function (x) { throw x })
+      sub = source.subscribe(function (x) {
+        throw x
+      })
     } catch (e) {
       messageError = true
       messageErrorValue = e
@@ -176,7 +181,9 @@ describe('subscribe', () => {
     var messageErrorValue = false
     var unsubscribeCalled = false
     var sub
-    var subscriber = toSubscriber(function (x) { throw x })
+    var subscriber = toSubscriber(function (x) {
+      throw x
+    })
     var source = new Observable(function (observer) {
       observer.next('boo!')
       return function () {
@@ -204,7 +211,9 @@ describe('subscribe', () => {
       observer.next(0)
       observer.next(0)
     })
-      .do(function () { return (times += 1) })
+      .do(function () {
+        return (times += 1)
+      })
       .subscribe(function () {
         if (times === 2) {
           this.unsubscribe()
@@ -222,7 +231,9 @@ describe('subscribe', () => {
       observer.next(0)
       observer.error(0)
     })
-      .do(function () { return (times += 1) })
+      .do(function () {
+        return (times += 1)
+      })
       .subscribe(
         function () {
           if (times === 2) {
@@ -231,7 +242,8 @@ describe('subscribe', () => {
         },
         () => {
           errorCalled = true
-        })
+        }
+      )
     expect(times).toBe(2)
     expect(errorCalled).toBeFalsy()
   })
@@ -245,7 +257,9 @@ describe('subscribe', () => {
       observer.next(0)
       observer.complete()
     })
-      .do(function () { return (times += 1) })
+      .do(function () {
+        return (times += 1)
+      })
       .subscribe(
         function () {
           if (times === 2) {
@@ -255,7 +269,8 @@ describe('subscribe', () => {
         null,
         () => {
           completeCalled = true
-        })
+        }
+      )
     expect(times).toBe(2)
     expect(completeCalled).toBeFalsy()
   })
@@ -282,15 +297,13 @@ describe('Observable.create', () => {
   })
 
   it('should send errors thrown in the passed function down the error path', function (done) {
-    Observable
-      .create(function (observer) {
-        throw new Error('this should be handled')
-      })
-      .subscribe({
-        error: function (err) {
-          expect(err).toEqual(new Error('this should be handled'))
-          done()
-        }
-      })
+    Observable.create(function (observer) {
+      throw new Error('this should be handled')
+    }).subscribe({
+      error: function (err) {
+        expect(err).toEqual(new Error('this should be handled'))
+        done()
+      }
+    })
   })
 })

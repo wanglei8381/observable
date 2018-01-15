@@ -7,13 +7,13 @@ export class AsapScheduler extends AsyncScheduler {
     let error
     action = action || actions.shift()
     do {
-      if (error = action.execute(action.state, action.delay)) break
-    } while (action = actions.shift())
+      if ((error = action.execute(action.state, action.delay))) break
+    } while ((action = actions.shift()))
 
     this.active = false
 
     if (error) {
-      while (action = actions.shift()) {
+      while ((action = actions.shift())) {
         action.unsubscribe()
       }
       throw error
