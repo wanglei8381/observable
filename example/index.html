@@ -12,28 +12,31 @@
 <body>
 <script src="../dist/rx.js"></script>
 <script>
-var times = 0
-new Rx.Observable(function (observer) {
-  observer.next(0)
-  observer.next(0)
-  observer.next(0)
-  observer.next(0)
-  observer.next(0)
-  observer.next(0)
-  observer.next(0)
-})
-  .do(function (val) {
-    return times += 1
-  })
-  .do(function (val) {
-    return times += 1
-  })
-  .subscribe(function (val) {
-    if (times === 4) {
-      this.unsubscribe()
+var syncExec1 = true
+var syncExec2 = true
+var asap = Rx.Scheduler.asap
+asap.schedule(function (index) {
+  console.log('===>>>>>>', index)
+  if (index === 0) {
+    this.schedule(1)
+//    asap.schedule(function () { syncExec1 = false })
+  }
+  else if (index === 1) {
+    this.schedule(2)
+//    asap.schedule(function () { syncExec2 = false })
+  }
+  else if (index === 2) {
+    this.schedule(3)
+  }
+  else if (index === 3) {
+    if (!syncExec1 && !syncExec2) {
+      console.log('OKOKOK')
     }
-  })
-console.log(times)
+    else {
+      console.log('failfailfail')
+    }
+  }
+}, 0, 0)
 </script>
 </body>
 </html>

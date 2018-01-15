@@ -1,5 +1,5 @@
 const path$ = require('path')
-const buble = require('rollup-plugin-buble')
+const babel = require('rollup-plugin-babel')
 const replace = require('rollup-plugin-replace')
 const uglify = require('rollup-plugin-uglify')
 const nodeResolve = require('rollup-plugin-node-resolve')
@@ -52,7 +52,11 @@ const getConfig = (opts) => {
       name: 'Rx'
     },
     plugins: [
-      buble(),
+      // 没有写在.babelrc里是因为和jest配置冲突
+      babel({
+        exclude: 'node_modules/**',
+        plugins: ['external-helpers']
+      }),
       nodeResolve()
     ]
   }

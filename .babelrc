@@ -1,8 +1,23 @@
 {
   "presets": [
-    "env"
+    [
+      "env",
+      {
+        "modules": false
+      }
+    ]
   ],
   "plugins": [
     "transform-class-properties"
-  ]
+  ],
+  "env": {
+    "test": {
+      "presets": [
+        "env"
+      ],
+      "plugins": [
+        "transform-class-properties"
+      ]
+    }
+  }
 }

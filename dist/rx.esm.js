@@ -1,9 +1,3 @@
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.Rx = {})));
-}(this, (function (exports) { 'use strict';
-
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -751,13 +745,4 @@ var Scheduler = {
   asap: asap
 };
 
-exports.Observable = Observable;
-exports.Subscription = Subscription;
-exports.Subscriber = Subscriber;
-exports.emptySubscriber = emptySubscriber;
-exports.toSubscriber = toSubscriber;
-exports.Scheduler = Scheduler;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));
+export { Observable, Subscription, Subscriber, emptySubscriber, toSubscriber, Scheduler };
