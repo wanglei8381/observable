@@ -20,13 +20,17 @@ describe('queue', () => {
     var call1 = false
     var call2 = false
     queue.active = false
-    queue.schedule(function (state) {
-      call1 = state.call1
-      call2 = state.call2
-      if (!call2) {
-        this.schedule({ call1: true, call2: true })
-      }
-    }, 0, { call1: true, call2: false })
+    queue.schedule(
+      function (state) {
+        call1 = state.call1
+        call2 = state.call2
+        if (!call2) {
+          this.schedule({ call1: true, call2: true })
+        }
+      },
+      0,
+      { call1: true, call2: false }
+    )
     expect(call1).toBeTruthy()
     expect(call2).toBeTruthy()
   })
