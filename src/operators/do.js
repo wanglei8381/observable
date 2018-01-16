@@ -1,10 +1,4 @@
-import { Observable } from './Observable'
-
-Observable.prototype.do = function (nextOrObserver, error, complete) {
-  return this.lift(doOperator(nextOrObserver, error, complete))
-}
-
-function doOperator (next, error, complete) {
+export function doOperator (next, error, complete) {
   return observer => {
     const subs = {
       next (val) {

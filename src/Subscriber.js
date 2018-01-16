@@ -1,5 +1,6 @@
 import { isNil, isFunction, isObjectLike } from './utils'
 import { Subscription } from './Subscription'
+import { rxSubscriber as rxSubscriberSymbol } from './symbol'
 export class Subscriber extends Subscription {
   constructor (next, error, complete) {
     super()
@@ -78,6 +79,9 @@ export function toSubscriber (observerOrNext, error, complete) {
   let next = observerOrNext
   if (isNil(observerOrNext)) return emptySubscriber
   if (observerOrNext instanceof Subscriber) return observerOrNext
+  if (observerOrNext[rxSubscriberSymbol]) {
+    observerOrNext = observerOrNext[rxSubscriberSymbol]()
+  }
   if (isObjectLike(observerOrNext)) {
     next = observerOrNext.next
     error = observerOrNext.error

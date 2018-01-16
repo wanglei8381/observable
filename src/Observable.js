@@ -1,8 +1,10 @@
 import { toSubscriber } from './Subscriber'
 import { observable as $$observable } from './symbol'
 export class Observable {
-  constructor (subscriber) {
-    this._subscriber = subscriber
+  constructor (subscribe) {
+    if (subscribe) {
+      this._subscribe = subscribe
+    }
   }
 
   lift (operator) {
@@ -19,8 +21,11 @@ export class Observable {
       const subscrition = toSubscriber(this.operator(observer))
       observer.add(subscrition)
       this.source.subscribe(subscrition)
-    } else if (this._subscriber) {
-      observer.add(this._trySubscribe(observer))
+    } else if (this._subscribe) {
+      // 存在source，source当最数据源（如subject中的asObservable）
+      observer.add(
+        this.source ? this._subscribe(observer) : this._trySubscribe(observer)
+      )
     }
 
     // 当在next中出错时，抛出错误对象
@@ -34,11 +39,15 @@ export class Observable {
   // 在订阅时出错要通知error，但不会抛出
   _trySubscribe (observer) {
     try {
-      return this._subscriber(observer)
+      return this._subscribe(observer)
     } catch (e) {
       observer.syncError = e
       observer.error(e)
     }
+  }
+
+  _subscribe (observer) {
+    return this.source.subscribe(observer)
   }
 
   [$$observable] () {

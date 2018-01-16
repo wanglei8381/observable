@@ -1,3 +1,5 @@
 export * from './type'
 export * from './immediate'
 export * from './animationFrame'
+export * from './ObjectUnsubscribedError'
+export * from './isScheduler'
