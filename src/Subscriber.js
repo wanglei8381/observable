@@ -2,16 +2,16 @@ import { isNil, isFunction, isObjectLike } from './utils'
 import { Subscription } from './Subscription'
 import { rxSubscriber as rxSubscriberSymbol } from './symbol'
 export class Subscriber extends Subscription {
-  constructor (next, error, complete) {
+  constructor (destinationOrNext, error, complete) {
     super()
-    if (next) {
-      this._next = next
-    }
-    if (error) {
-      this._error = error
-    }
-    if (complete) {
-      this._complete = complete
+    if (isObjectLike(destinationOrNext)) {
+      this.destination = destinationOrNext
+    } else {
+      this.destination = {
+        next: destinationOrNext && destinationOrNext.bind(this),
+        error: error && error.bind(this),
+        complete: complete && complete.bind(this)
+      }
     }
 
     this.active = true
@@ -68,6 +68,24 @@ export class Subscriber extends Subscription {
     }
   }
 
+  _next (value) {
+    if (this.destination.next) {
+      this.destination.next(value)
+    }
+  }
+
+  _error (e) {
+    if (this.destination.error) {
+      this.destination.error(e)
+    }
+  }
+
+  _complete () {
+    if (this.destination.complete) {
+      this.destination.complete()
+    }
+  }
+
   _unsubscribe () {
     this.active = false
   }
@@ -80,18 +98,7 @@ export function toSubscriber (observerOrNext, error, complete) {
   if (isNil(observerOrNext)) return emptySubscriber
   if (observerOrNext instanceof Subscriber) return observerOrNext
   if (observerOrNext[rxSubscriberSymbol]) {
-    observerOrNext = observerOrNext[rxSubscriberSymbol]()
-  }
-  if (isObjectLike(observerOrNext)) {
-    if (observerOrNext.next) {
-      next = observerOrNext.next.bind(observerOrNext)
-    }
-    if (observerOrNext.error) {
-      error = observerOrNext.error.bind(observerOrNext)
-    }
-    if (observerOrNext.complete) {
-      complete = observerOrNext.complete.bind(observerOrNext)
-    }
+    next = observerOrNext[rxSubscriberSymbol]()
   }
   return new Subscriber(next, error, complete)
 }
