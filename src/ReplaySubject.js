@@ -1,6 +1,7 @@
 import { Subject } from './Subject'
 import { Scheduler } from './Scheduler'
 import { ObjectUnsubscribedError } from './utils'
+import { ObserveOnSubscriber } from './operators/observeOn'
 export class ReplaySubject extends Subject {
   constructor (
     bufferSize = Number.POSITIVE_INFINITY,
@@ -37,8 +38,8 @@ export class ReplaySubject extends Subject {
     }
 
     if (scheduler) {
-      // observer = new ObserveOnSubscriber(observer, scheduler)
-      // observer.add(observer)
+      observer = new ObserveOnSubscriber(observer, scheduler)
+      observer.add(observer)
     }
 
     const length = events.length
