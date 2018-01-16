@@ -83,9 +83,15 @@ export function toSubscriber (observerOrNext, error, complete) {
     observerOrNext = observerOrNext[rxSubscriberSymbol]()
   }
   if (isObjectLike(observerOrNext)) {
-    next = observerOrNext.next
-    error = observerOrNext.error
-    complete = observerOrNext.complete
+    if (observerOrNext.next) {
+      next = observerOrNext.next.bind(observerOrNext)
+    }
+    if (observerOrNext.error) {
+      error = observerOrNext.error.bind(observerOrNext)
+    }
+    if (observerOrNext.complete) {
+      complete = observerOrNext.complete.bind(observerOrNext)
+    }
   }
   return new Subscriber(next, error, complete)
 }
