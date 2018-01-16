@@ -1,8 +1,4 @@
-import {
-  Subject,
-  BehaviorSubject,
-  ObjectUnsubscribedError
-} from '@'
+import { Subject, BehaviorSubject, ObjectUnsubscribedError } from '@'
 
 describe('BehaviorSubject', () => {
   it('should extend Subject', function () {
