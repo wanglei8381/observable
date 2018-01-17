@@ -1,6 +1,7 @@
 import {
   Observable,
   Subject,
+  AsyncSubject,
   ObjectUnsubscribedError,
   AnonymousSubject
 } from '@'
@@ -520,6 +521,75 @@ describe('Subject', () => {
     subject.error(error)
     subject.next('b')
     expect(results).toEqual(['a', error])
+  })
+
+  describe('asObservable', () => {
+    it('should hide subject', function () {
+      var subject = new Subject()
+      var observable = subject.asObservable()
+      expect(subject).not.toBe(observable)
+      expect(observable instanceof Observable).toBeTruthy()
+      expect(observable instanceof Subject).toBeFalsy()
+    })
+
+    it('能够正常接受值', function (done) {
+      var subject = new Subject()
+      var observable = subject.asObservable()
+      observable.subscribe(
+        x => {
+          expect(x).toBe(1)
+        },
+        e => {
+          done(e)
+        },
+        () => {
+          done()
+        }
+      )
+      subject.next(1)
+      subject.complete()
+    })
+
+    it('should handle subject never emits', function () {
+      var observable = hot('-').asObservable()
+      expectObservable(observable).toBe([])
+    })
+
+    it('should handle subject completes without emits', function () {
+      var observable = hot('--^--|').asObservable()
+      var expected = '---|'
+      expectObservable(observable).toBe(expected)
+    })
+
+    it('should handle subject throws', function () {
+      var observable = hot('--^--#').asObservable()
+      var expected = '---#'
+      expectObservable(observable).toBe(expected)
+    })
+
+    it('should handle subject emits', function () {
+      var observable = hot('--^--x--|').asObservable()
+      var expected = '---x--|'
+      expectObservable(observable).toBe(expected)
+    })
+
+    it('should work with inherited subject', function () {
+      var results = []
+      var subject = new AsyncSubject()
+      subject.next(42)
+      subject.complete()
+      var observable = subject.asObservable()
+      observable.subscribe(
+        function (x) {
+          return results.push(x)
+        },
+        null,
+        function () {
+          return results.push('done')
+        }
+      )
+      expect(results).toEqual([42, 'done'])
+    })
   })
 })
 

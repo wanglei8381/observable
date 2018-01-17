@@ -3,5 +3,8 @@
     "jest": true
   },
   "globals": {
+    "hot": true,
+    "expectObservable": true,
+    "cold": true
   }
 }

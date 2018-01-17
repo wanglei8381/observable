@@ -6,6 +6,7 @@ export class AsyncScheduler extends Scheduler {
 
   flush (action) {
     const { actions } = this
+    // 在schedule中继续调用schedule，如果schedule是同步的，只需要添加队列中等待执行即可
     if (this.active) {
       actions.push(action)
       return

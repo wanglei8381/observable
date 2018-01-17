@@ -17,6 +17,8 @@ export class Subscription {
   }
 
   add (observer) {
+    // 在asObservable中会把自己加进来，要进行排除，不然在unsubscribe会造成死循环(bug：找了好久)
+    if (observer === this) return this
     if (isFunction(observer)) {
       this.observers.push({
         unsubscribe: observer

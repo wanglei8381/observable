@@ -144,7 +144,7 @@ function iterateObserver (observers, key, val) {
 }
 
 function subjectSubscription (subject, observer) {
-  if (subject.closed || subject.isStopped || subject.observers.length === 0) {
+  if (subject.observers.length === 0) {
     return
   }
   const index = subject.observers.indexOf(observer)

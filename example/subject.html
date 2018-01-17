@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta lang="zh">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="renderer" content="webkit">
+  <meta name="description" content="">
+  <meta name="keyword" content="">
+  <title></title>
+</head>
+<body>
+<script src="https://cdn.bootcss.com/rxjs/5.5.6/Rx.js"></script>
+<script>
+var subject = new Rx.Subject()
+var observable = subject.asObservable()
+subject.next(1)
+observable.subscribe((val) => {
+  console.log('next:', val)
+})
+
+subject.next(2)
+</script>
+</body>
+</html>
