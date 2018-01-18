@@ -1,3 +1,5 @@
 export * from './ArrayObservable'
 export * from './EmptyObservable'
 export * from './of'
+export * from './empty'
+export * from './throw'

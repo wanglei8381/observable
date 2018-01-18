@@ -5,6 +5,7 @@
   "globals": {
     "hot": true,
     "expectObservable": true,
-    "cold": true
+    "cold": true,
+    "rxTestScheduler": true
   }
 }

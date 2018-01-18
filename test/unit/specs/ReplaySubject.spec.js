@@ -97,3 +97,47 @@ describe('ReplaySubject', () => {
     )
   })
 })
+
+describe.skip('ReplaySubject with bufferSize=2', function () {
+  it('should replay 2 previous values when subscribed', function () {
+    var replaySubject = new ReplaySubject(2)
+
+    function feedNextIntoSubject (x) {
+      replaySubject.next(x)
+    }
+
+    function feedErrorIntoSubject (err) {
+      replaySubject.error(err)
+    }
+
+    function feedCompleteIntoSubject () {
+      replaySubject.complete()
+    }
+
+    var sourceTemplate = '-1-2-3----4------5-6---7--8----9--|'
+    var subscriber1 = hot('      (a|)                         ').mergeMapTo(
+      replaySubject
+    )
+    var unsub1 = '                     !             '
+    var expected1 = '      (23)4------5-6--             '
+    var subscriber2 = hot('            (b|)                   ').mergeMapTo(
+      replaySubject
+    )
+    var unsub2 = '                         !         '
+    var expected2 = '            (34)-5-6---7--         '
+    var subscriber3 = hot('                           (c|)    ').mergeMapTo(
+      replaySubject
+    )
+    var expected3 = '                           (78)9--|'
+    expectObservable(
+      hot(sourceTemplate).do(
+        feedNextIntoSubject,
+        feedErrorIntoSubject,
+        feedCompleteIntoSubject
+      )
+    ).toBe(sourceTemplate)
+    expectObservable(subscriber1, unsub1).toBe(expected1)
+    expectObservable(subscriber2, unsub2).toBe(expected2)
+    expectObservable(subscriber3).toBe(expected3)
+  })
+})

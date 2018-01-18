@@ -1,22 +1,11 @@
 import { Observable, Subscription, toSubscriber } from '@'
 
-expect.extend({
-  type (received, argument) {
-    /* eslint-disable valid-typeof */
-    const pass = typeof received === argument
-    return {
-      message: () => `期望的类型是${argument}，实际返回的是${typeof received}`,
-      pass
-    }
-  }
-})
-
 function expectFullObserver (val) {
-  expect(val).type('object')
-  expect(val.next).type('function')
-  expect(val.error).type('function')
-  expect(val.complete).type('function')
-  expect(val.closed).type('boolean')
+  expect(val).toBeType('object')
+  expect(val.next).toBeType('function')
+  expect(val.error).toBeType('function')
+  expect(val.complete).toBeType('function')
+  expect(val.closed).toBeType('boolean')
 }
 
 describe('Observable', () => {
@@ -146,7 +135,7 @@ describe('subscribe', () => {
     })
     expect(sub instanceof Subscription).toBeTruthy()
     expect(unsubscribeCalled).toBeFalsy()
-    expect(sub.unsubscribe).type('function')
+    expect(sub.unsubscribe).toBeType('function')
     sub.unsubscribe()
     expect(unsubscribeCalled).toBeTruthy()
   })

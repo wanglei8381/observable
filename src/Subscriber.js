@@ -89,6 +89,10 @@ export class Subscriber extends Subscription {
   _unsubscribe () {
     this.active = false
   }
+
+  static create (...args) {
+    return new Subscriber(...args)
+  }
 }
 
 export const emptySubscriber = new Subscriber()
