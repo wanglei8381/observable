@@ -140,6 +140,49 @@ describe('subscribe', () => {
     expect(unsubscribeCalled).toBeTruthy()
   })
 
+  it('调用Subscription.add时，应该避免互相引用导致的死循环', () => {
+    var unsubscribeCalled = false
+    var source = new Observable(function () {
+      return function () {
+        unsubscribeCalled = true
+      }
+    })
+    var sub1 = source.subscribe(function () {
+      // noop
+    })
+    var sub2 = source.subscribe(function () {
+      // noop
+    })
+    sub1.add(sub2)
+    sub2.add(sub1)
+    sub1.unsubscribe()
+    expect(unsubscribeCalled).toBeTruthy()
+  })
+
+  it('调用Subscription.add互相引用时，调用任意一方的unsubscribe，都可以全部释放', () => {
+    var unsubscribeCalled1 = false
+    var unsubscribeCalled2 = false
+    var source1 = new Observable(function () {
+      return function () {
+        unsubscribeCalled1 = true
+      }
+    })
+
+    var source2 = new Observable(function () {
+      return function () {
+        unsubscribeCalled2 = true
+      }
+    })
+
+    var sub1 = source1.subscribe()
+    var sub2 = source2.subscribe()
+    sub1.add(sub2)
+    sub2.add(sub1)
+    sub2.unsubscribe()
+    expect(unsubscribeCalled1).toBeTruthy()
+    expect(unsubscribeCalled2).toBeTruthy()
+  })
+
   it('当在next中出现同步错误时，应该执行unsubscribe', () => {
     var messageError = false
     var messageErrorValue = false

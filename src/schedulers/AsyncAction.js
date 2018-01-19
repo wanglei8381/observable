@@ -39,7 +39,6 @@ export class AsyncAction extends Action {
     if (this.closed) {
       return new Error('executing a cancelled action')
     }
-
     this.pending = false
     const error = this._execute(state)
     if (error) {

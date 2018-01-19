@@ -9,7 +9,7 @@ export class ScalarObservable extends Observable {
   _subscribe (observer) {
     const { value, scheduler } = this
     if (scheduler) {
-      scheduler.schedule(ScalarObservable.dispatch, {
+      scheduler.schedule(ScalarObservable.dispatch, 0, {
         observer,
         value
       })

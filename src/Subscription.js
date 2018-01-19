@@ -9,11 +9,15 @@ export class Subscription {
     if (this._unsubscribe) {
       this._unsubscribe()
     }
-    this.observers.forEach(observer => {
-      observer.unsubscribe()
-    })
-    this.observers = []
+    // _closed要在循环之前赋值，避免相互引用导致的死循环
     this._closed = true
+    this.observers.forEach(observer => {
+      if (observer.closed !== true) {
+        observer.unsubscribe()
+      }
+    })
+
+    this.observers = []
   }
 
   add (observer) {

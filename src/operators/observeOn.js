@@ -14,12 +14,12 @@ export class ObserveOnSubscriber extends Subscriber {
   }
 
   scheduleMessage (notification) {
-    this.add(
-      this.scheduler.schedule(ObserveOnSubscriber.dispatch, this.delay, {
-        notification,
-        destination: this.destination
-      })
-    )
+    // this.add(
+    this.scheduler.schedule(ObserveOnSubscriber.dispatch, this.delay, {
+      notification,
+      destination: this.destination
+    })
+    // )
   }
 
   _next (value) {

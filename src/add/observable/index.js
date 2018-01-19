@@ -1,3 +1,5 @@
 import './of'
 import './empty'
 import './throw'
+import './fromPromise'
+import './from'

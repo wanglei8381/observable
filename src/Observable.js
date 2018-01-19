@@ -5,6 +5,7 @@ export class Observable {
     if (subscribe) {
       this._subscribe = subscribe
     }
+    this._isScalar = false
   }
 
   lift (operator) {

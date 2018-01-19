@@ -1,5 +1,7 @@
 import { Observable } from '../Observable'
-export class ArrayObservable extends Observable {
+import { EmptyObservable } from './EmptyObservable'
+import { ScalarObservable } from './ScalarObservable'
+export class ArrayLikeObservable extends Observable {
   constructor (array, scheduler) {
     super()
     this.array = array
@@ -10,7 +12,7 @@ export class ArrayObservable extends Observable {
     const { array, scheduler } = this
     const len = array.length
     if (scheduler) {
-      scheduler.schedule(ArrayObservable.dispatch, 0, {
+      scheduler.schedule(ArrayLikeObservable.dispatch, 0, {
         array,
         observer,
         index: 0,
@@ -25,7 +27,16 @@ export class ArrayObservable extends Observable {
   }
 
   static create (array, scheduler) {
-    return new ArrayObservable(array, scheduler)
+    const length = array.length
+    if (length === 0) {
+      return new EmptyObservable(scheduler)
+    }
+
+    if (length === 1) {
+      return new ScalarObservable(array[0], scheduler)
+    }
+
+    return new ArrayLikeObservable(array, scheduler)
   }
 
   static dispatch (state) {
