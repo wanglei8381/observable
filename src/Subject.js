@@ -53,7 +53,7 @@ export class Subject extends Observable {
   unsubscribe () {
     this.closed = true
     this.isStopped = true
-    this.observers = []
+    this.observers = null
   }
 
   _trySubscribe (observer) {

@@ -19,28 +19,20 @@ export class Subscriber extends Subscription {
 
   next (val) {
     if (!this.active) return
-    if (this._next) {
-      try {
-        this._next(val)
-      } catch (e) {
-        this.unsubscribe()
-        this.errorSource = 'next'
-        this.errorValue = e
-      }
+    try {
+      this._next(val)
+    } catch (e) {
+      this.unsubscribe()
+      this.errorSource = 'next'
+      this.errorValue = e
     }
   }
 
   error (e) {
     if (!this.active) return
-    if (this._error) {
-      try {
-        this._error(e)
-      } catch (e) {
-        this.unsubscribe()
-        this.errorSource = 'error'
-        throw e
-      }
-    } else {
+    try {
+      this._error(e)
+    } catch (e) {
       this.unsubscribe()
       this.errorSource = 'error'
       throw e
@@ -50,9 +42,7 @@ export class Subscriber extends Subscription {
 
   complete () {
     if (!this.active) return
-    if (this._complete) {
-      this._complete()
-    }
+    this._complete()
     this.unsubscribe()
   }
 
@@ -77,6 +67,10 @@ export class Subscriber extends Subscription {
   _error (e) {
     if (this.destination.error) {
       this.destination.error(e)
+    } else {
+      this.unsubscribe()
+      this.errorSource = 'error'
+      throw e
     }
   }
 

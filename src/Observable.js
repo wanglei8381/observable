@@ -5,6 +5,7 @@ export class Observable {
     if (subscribe) {
       this._subscribe = subscribe
     }
+    // 是否只触发一次数据
     this._isScalar = false
   }
 
