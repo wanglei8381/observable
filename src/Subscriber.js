@@ -37,13 +37,17 @@ export class Subscriber extends Subscription {
       this.errorSource = 'error'
       throw e
     }
-    this.unsubscribe()
   }
 
   complete () {
     if (!this.active) return
-    this._complete()
-    this.unsubscribe()
+    try {
+      this._complete()
+    } catch (e) {
+      this.unsubscribe()
+      this.errorSource = 'complete'
+      throw e
+    }
   }
 
   add (observer) {
@@ -72,12 +76,14 @@ export class Subscriber extends Subscription {
       this.errorSource = 'error'
       throw e
     }
+    this.unsubscribe()
   }
 
   _complete () {
     if (this.destination.complete) {
       this.destination.complete()
     }
+    this.unsubscribe()
   }
 
   _unsubscribe () {

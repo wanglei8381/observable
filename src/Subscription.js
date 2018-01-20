@@ -10,6 +10,7 @@ export class Subscription {
   }
 
   unsubscribe () {
+    if (this.closed) return
     if (this._unsubscribe) {
       this._unsubscribe()
     }
