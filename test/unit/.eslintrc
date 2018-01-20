@@ -6,6 +6,7 @@
     "hot": true,
     "expectObservable": true,
     "cold": true,
-    "rxTestScheduler": true
+    "rxTestScheduler": true,
+    "expectSubscriptions": true
   }
 }

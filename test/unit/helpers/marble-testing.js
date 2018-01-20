@@ -24,6 +24,20 @@ export function expectObservable (observable, unsubscriptionMarbles = null) {
   }
 }
 
+export function expectSubscriptions (actualSubscriptionLogs) {
+  const res = global.rxTestScheduler.expectSubscriptions(actualSubscriptionLogs)
+  return {
+    toBe (...args) {
+      res.toBe(...args)
+      try {
+        global.rxTestScheduler.flush()
+      } finally {
+        global.rxTestScheduler = getRxTestScheduler()
+      }
+    }
+  }
+}
+
 export function getRxTestScheduler () {
   return new TestScheduler(function (actual, expected) {
     if (Array.isArray(actual) && Array.isArray(expected)) {

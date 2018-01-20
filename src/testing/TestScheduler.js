@@ -35,7 +35,7 @@ export class TestScheduler extends VirtualTimeScheduler {
   }
 
   createColdObservable (marbles, values, error) {
-    if (marbles.indexOf(startTag) === -1) {
+    if (marbles.indexOf(startTag) !== -1) {
       throw new Error('cold observable cannot have subscription offset "^"')
     }
 

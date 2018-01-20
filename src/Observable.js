@@ -1,5 +1,6 @@
 import { toSubscriber } from './Subscriber'
 import { observable as $$observable } from './symbol'
+import { wrapOperator } from './utils'
 export class Observable {
   constructor (subscribe) {
     if (subscribe) {
@@ -12,7 +13,7 @@ export class Observable {
   lift (operator) {
     const observable = new Observable()
     observable.source = this
-    observable.operator = operator
+    observable.operator = wrapOperator(operator)
     return observable
   }
 
@@ -20,9 +21,7 @@ export class Observable {
     const observer = toSubscriber(observerOrNext, error, complete)
 
     if (this.operator) {
-      const subscrition = toSubscriber(this.operator(observer))
-      observer.add(subscrition)
-      this.source.subscribe(subscrition)
+      this.operator(observer)
     } else if (this._subscribe) {
       // 存在source，source当最数据源（如subject中的asObservable）
       observer.add(

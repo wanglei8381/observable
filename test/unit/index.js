@@ -1,7 +1,13 @@
-import { cold, hot, expectObservable } from './helpers/marble-testing'
+import {
+  cold,
+  hot,
+  expectObservable,
+  expectSubscriptions
+} from './helpers/marble-testing'
 global.cold = cold
 global.hot = hot
 global.expectObservable = expectObservable
+global.expectSubscriptions = expectSubscriptions
 global.expect.extend({
   toBeType (received, argument) {
     const initialType = typeof received
