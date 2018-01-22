@@ -3,6 +3,7 @@ const babel = require('rollup-plugin-babel')
 const replace = require('rollup-plugin-replace')
 const uglify = require('rollup-plugin-uglify')
 const nodeResolve = require('rollup-plugin-node-resolve')
+const filesize = require('rollup-plugin-filesize')
 
 const resolve = path => path$.resolve(__dirname, '../', path)
 
@@ -69,6 +70,7 @@ const getConfig = (opts) => {
 
   if (opts.uglify) {
     config.plugins.push(uglify())
+    config.plugins.push(filesize())
   }
 
   return config
