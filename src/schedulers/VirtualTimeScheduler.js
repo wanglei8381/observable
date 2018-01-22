@@ -1,8 +1,10 @@
 import { AsyncScheduler } from './AsyncScheduler'
 import { AsyncAction } from './AsyncAction'
+// 模式异步调用的Scheduler，frame表示时间帧，index表示同一个时间帧下的下标
+// frame越大越靠后执行，index越大越靠后执行;注意VirtualTimeScheduler的now现在其实就是frame
 export class VirtualTimeScheduler extends AsyncScheduler {
   static frameTimeFactor = 10
-  constructor (SchedulerAction, maxFrames) {
+  constructor (SchedulerAction, maxFrames = Number.POSITIVE_INFINITY) {
     super(SchedulerAction, () => this.frame)
     this.frame = 0
     this.index = -1

@@ -1,18 +1,16 @@
-export function doOperator (next, error, complete) {
-  return observer => ({
-    next (val) {
-      next(val)
-      observer.next(val)
-    },
+export const doOperator = (next, error, complete) => observer => ({
+  next (val) {
+    next && next(val)
+    observer.next(val)
+  },
 
-    error (e) {
-      error && error(e)
-      observer.error(e)
-    },
+  error (e) {
+    error && error(e)
+    observer.error(e)
+  },
 
-    complete () {
-      complete && complete()
-      observer.complete()
-    }
-  })
-}
+  complete () {
+    complete && complete()
+    observer.complete()
+  }
+})

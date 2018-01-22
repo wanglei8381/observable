@@ -12,31 +12,23 @@
 <body>
 <script src="../dist/rx.js"></script>
 <script>
-var syncExec1 = true
-var syncExec2 = true
-var asap = Rx.Scheduler.asap
-asap.schedule(function (index) {
-  console.log('===>>>>>>', index)
-  if (index === 0) {
-    this.schedule(1)
-//    asap.schedule(function () { syncExec1 = false })
+var Observable = Rx.Observable
+var source = Observable.from([4, 3, 2, 1])
+var project = function () {
+  return Observable.from(Promise.resolve(42))
+}
+var results = []
+source.mergeMap(project).subscribe(
+  function (x) {
+    console.log(x)
+  },
+  function () {
+    console.log('err')
+  },
+  function () {
+    console.log('C')
   }
-  else if (index === 1) {
-    this.schedule(2)
-//    asap.schedule(function () { syncExec2 = false })
-  }
-  else if (index === 2) {
-    this.schedule(3)
-  }
-  else if (index === 3) {
-    if (!syncExec1 && !syncExec2) {
-      console.log('OKOKOK')
-    }
-    else {
-      console.log('failfailfail')
-    }
-  }
-}, 0, 0)
+)
 </script>
 </body>
 </html>

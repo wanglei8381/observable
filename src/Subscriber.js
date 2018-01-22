@@ -14,11 +14,11 @@ export class Subscriber extends Subscription {
       }
     }
 
-    this.active = true
+    this.isStopped = true
   }
 
   next (val) {
-    if (!this.active) return
+    if (!this.isStopped) return
     try {
       this._next(val)
     } catch (e) {
@@ -29,7 +29,7 @@ export class Subscriber extends Subscription {
   }
 
   error (e) {
-    if (!this.active) return
+    if (!this.isStopped) return
     try {
       this._error(e)
     } catch (e) {
@@ -40,7 +40,7 @@ export class Subscriber extends Subscription {
   }
 
   complete () {
-    if (!this.active) return
+    if (!this.isStopped) return
     try {
       this._complete()
     } catch (e) {
@@ -51,7 +51,7 @@ export class Subscriber extends Subscription {
   }
 
   add (observer) {
-    if (!this.active) {
+    if (!this.isStopped) {
       if (isFunction(observer)) {
         observer()
       } else if (observer instanceof Subscription) {
@@ -87,7 +87,7 @@ export class Subscriber extends Subscription {
   }
 
   _unsubscribe () {
-    this.active = false
+    this.isStopped = false
   }
 
   static create (...args) {

@@ -1,10 +1,10 @@
-import { toSubscriber } from '../Subscriber'
-import { isFunction, isObject } from './type'
+import { toSubscriber, Subscriber } from '../Subscriber'
+import { isFunction, isUndefined, isObject } from './type'
 
 const subscritionActions = ['next', 'error', 'complete']
 export function wrapOperator (operator) {
   return function operatorWrapper (observer) {
-    const _subscrition = {
+    let _subscrition = {
       next (value) {
         observer.next(value)
       },
@@ -19,8 +19,11 @@ export function wrapOperator (operator) {
     }
 
     const res = operator(observer)
+    if (isUndefined(res)) return
     if (isFunction(res)) {
       _subscrition.next = res
+    } else if (res instanceof Subscriber) {
+      _subscrition = res
     } else if (isObject(res)) {
       for (let i = 0; i < 3; i++) {
         const action = subscritionActions[i]
@@ -29,6 +32,7 @@ export function wrapOperator (operator) {
         }
       }
     }
+
     const subscrition = toSubscriber(_subscrition)
     observer.add(subscrition)
     this.source.subscribe(subscrition)

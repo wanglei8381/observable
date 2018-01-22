@@ -50,6 +50,13 @@ export class Subscription {
     }
   }
 
+  remove (observer) {
+    const { _set, observers } = this
+    if (observer && observer._uid && _set.has(observer._uid)) {
+      observers.splice(observers.indexOf(observer), 1)
+    }
+  }
+
   get closed () {
     return this._closed
   }

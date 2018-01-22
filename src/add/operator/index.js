@@ -1,3 +1,6 @@
 import './do'
 import './delay'
 import './take'
+import './filter'
+import './map'
+import './mergeMap'

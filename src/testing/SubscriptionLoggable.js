@@ -1,4 +1,5 @@
 import { SubscriptionLog } from './SubscriptionLog'
+// 这个类没有直接使用，通过混合的方式提供给HotObservable和ColdObservable
 export class SubscriptionLoggable {
   subscriptions = []
   scheduler = null

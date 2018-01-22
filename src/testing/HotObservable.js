@@ -18,6 +18,7 @@ export class HotObservable extends Subject {
     return super._subscribe(subscriber)
   }
 
+  // TestScheduler的flush中调用
   setup () {
     this.messages.forEach(message => {
       this.scheduler.schedule(() => {

@@ -1,5 +1,5 @@
 import { Observable } from './Observable'
-import { ObjectUnsubscribedError } from './utils'
+import { ObjectUnsubscribedError, wrapOperator } from './utils'
 import { rxSubscriber as rxSubscriberSymbol } from './symbol'
 export class Subject extends Observable {
   constructor () {
@@ -12,8 +12,8 @@ export class Subject extends Observable {
   }
 
   lift (operator) {
-    const subject = new Subject()
-    subject.operator = operator
+    const subject = new AnonymousSubject(this, this)
+    subject.operator = wrapOperator(operator)
     return subject
   }
 

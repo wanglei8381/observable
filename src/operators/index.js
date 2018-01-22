@@ -1,3 +1,6 @@
 export * from './do'
 export * from './delay'
 export * from './take'
+export * from './filter'
+export * from './map'
+export * from './mergeMap'

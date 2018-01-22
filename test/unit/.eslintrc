@@ -8,5 +8,10 @@
     "cold": true,
     "rxTestScheduler": true,
     "expectSubscriptions": true
+  },
+  "rules": {
+    "no-throw-literal": "off",
+    "no-lone-blocks": "off",
+    "prefer-promise-reject-errors": "off"
   }
 }
