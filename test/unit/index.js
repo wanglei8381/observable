@@ -1,11 +1,13 @@
 import {
   cold,
   hot,
+  time,
   expectObservable,
   expectSubscriptions
 } from './helpers/marble-testing'
 global.cold = cold
 global.hot = hot
+global.time = time
 global.expectObservable = expectObservable
 global.expectSubscriptions = expectSubscriptions
 global.expect.extend({

@@ -1,13 +1,11 @@
 import { Observable } from '@'
 
 describe('Observable.prototype.distinctUntilChanged', function () {
-  it('distinctUntilChanged should distinguish between values',
-    function () {
-      var e1 = hot('-1--2-2----1-3-|')
-      var expected = '-1--2------1-3-|'
-      expectObservable(e1.distinctUntilChanged()).toBe(expected)
-    }
-  )
+  it('distinctUntilChanged should distinguish between values', function () {
+    var e1 = hot('-1--2-2----1-3-|')
+    var expected = '-1--2------1-3-|'
+    expectObservable(e1.distinctUntilChanged()).toBe(expected)
+  })
 
   it('should distinguish between values', function () {
     var e1 = hot('--a--a--a--b--b--a--|')

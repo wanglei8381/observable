@@ -1,5 +1,5 @@
 import { toSubscriber, Subscriber } from '../Subscriber'
-import { isFunction, isUndefined, isObject } from './type'
+import { isFunction, isObject } from './type'
 
 const subscritionActions = ['next', 'error', 'complete']
 export function wrapOperator (operator) {
@@ -19,7 +19,7 @@ export function wrapOperator (operator) {
     }
 
     const res = operator(observer)
-    if (isUndefined(res)) return
+    if (res === false) return
     if (isFunction(res)) {
       _subscrition.next = res
     } else if (res instanceof Subscriber) {

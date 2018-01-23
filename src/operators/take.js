@@ -6,7 +6,8 @@ export function takeOperator (number = Number.POSITIVE_INFINITY) {
   return observer => {
     let count = 0
     if (number === 0) {
-      return observer.complete()
+      observer.complete()
+      return false
     }
     return function (val) {
       count++

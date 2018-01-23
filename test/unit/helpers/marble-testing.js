@@ -7,6 +7,13 @@ export function cold (...args) {
   return global.rxTestScheduler.createColdObservable(...args)
 }
 
+export function time () {
+  return global.rxTestScheduler.createTime.apply(
+    global.rxTestScheduler,
+    arguments
+  )
+}
+
 export function expectObservable (observable, unsubscriptionMarbles = null) {
   const res = global.rxTestScheduler.expectObservable(
     observable,

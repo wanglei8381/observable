@@ -1,48 +1,80 @@
-export function delayOperator (delay = 0, scheduler) {
-  return observer => {
-    const queue = []
-    let count = 0
-    let index = 0
+import { Scheduler } from '../schedulers'
+import { Subscriber } from '../Subscriber'
+import { Notification } from '../Notification'
+import { isDate } from '../utils'
+export function delayOperator (delay = 0, scheduler = Scheduler.async) {
+  const absoluteDelay = isDate(delay)
+  const delayFor = absoluteDelay ? +delay - scheduler.now() : Math.abs(delay)
+  return observer => new DelaySubscriber(observer, delayFor, scheduler)
+}
 
-    function execute () {
-      const state = queue.shift()
-      if (state.type === 'N') {
-        setTimeout(() => {
-          index++
-          observer.next(state.value)
-          if (count === index && queue.length > 0) {
-            execute()
-          }
-        }, delay)
-      } else if (state.type === 'E') {
-        observer.error(state.value)
-      } else {
-        observer.complete()
-      }
+class DelaySubscriber extends Subscriber {
+  constructor (destination, delay, scheduler) {
+    super(destination)
+    this.delay = delay
+    this.scheduler = scheduler
+    this.queue = []
+    this.active = false
+    this.errored = false
+  }
+
+  _schedule (scheduler) {
+    this.active = true
+    this.add(
+      scheduler.schedule(DelaySubscriber.dispatch, this.delay, {
+        source: this,
+        destination: this.destination,
+        scheduler
+      })
+    )
+  }
+
+  scheduleNotification (notification) {
+    if (this.errored === true) {
+      return
     }
 
-    return {
-      next (value) {
-        queue.push({
-          type: 'N',
-          value
-        })
-        count++
-        execute()
-      },
+    const scheduler = this.scheduler
+    const message = {
+      time: scheduler.now() + this.delay,
+      notification
+    }
+    this.queue.push(message)
 
-      error (value) {
-        queue.push({
-          type: 'E',
-          value
-        })
-      },
+    if (this.active === false) {
+      this._schedule(scheduler)
+    }
+  }
 
-      complete () {
-        queue.push({
-          type: 'C'
-        })
-      }
+  _next (value) {
+    this.scheduleNotification(Notification.createNext(value))
+  }
+
+  _error (err) {
+    this.errored = true
+    this.queue = []
+    this.destination.error(err)
+  }
+
+  _complete () {
+    this.scheduleNotification(Notification.createComplete())
+  }
+
+  static dispatch (state) {
+    const source = state.source
+    const queue = source.queue
+    const scheduler = state.scheduler
+    const destination = state.destination
+
+    while (queue.length > 0 && queue[0].time - scheduler.now() <= 0) {
+      queue.shift().notification.observe(destination)
+    }
+
+    if (queue.length > 0) {
+      const delay = Math.max(0, queue[0].time - scheduler.now())
+      this.schedule(state, delay)
+    } else {
+      source.active = false
     }
   }
 }
