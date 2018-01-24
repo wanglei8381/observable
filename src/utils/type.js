@@ -1,6 +1,20 @@
+import { makeMap } from './makeMap'
 const objectProto = Object.prototype
 const toString = obj => objectProto.toString.call(obj)
-
+const viewClasses = [
+  'Int8Array',
+  'Uint8Array',
+  'Uint8ClampedArray',
+  'Int16Array',
+  'Uint16Array',
+  'Int32Array',
+  'Uint32Array',
+  'Float32Array',
+  'Float64Array'
+]
+const viewClassesMap = makeMap(
+  viewClasses.map(clazz => `[object ${clazz}]`).join(',')
+)
 export function isNull (obj) {
   return obj === null
 }
@@ -80,6 +94,14 @@ export function isArguments (obj) {
 
 export function isArray (obj) {
   return Array.isArray(obj)
+}
+
+export function isArrayBuffer (obj) {
+  return toString(obj) === '[object ArrayBuffer]'
+}
+
+export function isArrayBufferView (obj) {
+  return obj && viewClassesMap(Object.prototype.toString.call(obj))
 }
 
 // 2^53 - 1 数组下标从0开始，最大长度length - 1
