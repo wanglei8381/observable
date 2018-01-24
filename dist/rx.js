@@ -4,6 +4,19 @@
 	(factory((global.Rx = {})));
 }(this, (function (exports) { 'use strict';
 
+function makeMap(str, expectsLowerCase) {
+  var map = Object.create(null);
+  var list = str.split(',');
+  for (var i = 0; i < list.length; i++) {
+    map[list[i]] = true;
+  }
+  return expectsLowerCase ? function (val) {
+    return map[val.toLowerCase()];
+  } : function (val) {
+    return map[val];
+  };
+}
+
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
 } : function (obj) {
@@ -113,7 +126,10 @@ var objectProto = Object.prototype;
 var toString = function toString(obj) {
   return objectProto.toString.call(obj);
 };
-
+var viewClasses = ['Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array'];
+var viewClassesMap = makeMap(viewClasses.map(function (clazz) {
+  return '[object ' + clazz + ']';
+}).join(','));
 
 
 function isUndefined(obj) {
@@ -173,6 +189,10 @@ function isArray(obj) {
   return Array.isArray(obj);
 }
 
+
+
+
+
 // 2^53 - 1 数组下标从0开始，最大长度length - 1
 var MAX_SAFE_INTEGER = 9007199254740991;
 /**
@@ -206,7 +226,9 @@ function isArrayLike(obj) {
 
 
 
-
+function isDate(obj) {
+  return isObjectLike(obj) && toString(obj) === '[object Date]';
+}
 
 
 
@@ -414,7 +436,7 @@ function wrapOperator(operator) {
     };
 
     var res = operator(observer);
-    if (isUndefined(res)) return;
+    if (res === false) return;
     if (isFunction(res)) {
       _subscrition.next = res;
     } else if (res instanceof Subscriber) {
@@ -429,6 +451,7 @@ function wrapOperator(operator) {
     }
 
     var subscrition = toSubscriber(_subscrition);
+    // 先进行添加
     observer.add(subscrition);
     this.source.subscribe(subscrition);
   };
@@ -478,6 +501,12 @@ var Subscription = function () {
         });
       } else if (observer instanceof Subscription) {
         this._add(observer);
+      } else if (isArray(observer)) {
+        var list = observer;
+        var length = list.length;
+        for (var i = 0; i < length; i++) {
+          this.add(list[i]);
+        }
       }
     }
   }, {
@@ -577,15 +606,17 @@ var Subscriber = function (_Subscription) {
       };
     }
 
-    _this.isStopped = true;
+    _this.isStopped = false;
+    _this.readyState = 0;
     return _this;
   }
 
   createClass(Subscriber, [{
     key: 'next',
     value: function next(val) {
-      if (!this.isStopped) return;
+      if (this.isStopped) return;
       try {
+        this.readyState = 1;
         this._next(val);
       } catch (e) {
         this.unsubscribe();
@@ -596,8 +627,9 @@ var Subscriber = function (_Subscription) {
   }, {
     key: 'error',
     value: function error(e) {
-      if (!this.isStopped) return;
+      if (this.isStopped) return;
       try {
+        this.readyState = 2;
         this._error(e);
       } catch (e) {
         this.unsubscribe();
@@ -608,8 +640,9 @@ var Subscriber = function (_Subscription) {
   }, {
     key: 'complete',
     value: function complete() {
-      if (!this.isStopped) return;
+      if (this.isStopped) return;
       try {
+        this.readyState = 3;
         this._complete();
       } catch (e) {
         this.unsubscribe();
@@ -620,7 +653,7 @@ var Subscriber = function (_Subscription) {
   }, {
     key: 'add',
     value: function add(observer) {
-      if (!this.isStopped) {
+      if (this.isStopped) {
         if (isFunction(observer)) {
           observer();
         } else if (observer instanceof Subscription) {
@@ -660,7 +693,7 @@ var Subscriber = function (_Subscription) {
   }, {
     key: '_unsubscribe',
     value: function _unsubscribe() {
-      this.isStopped = false;
+      this.isStopped = true;
     }
   }], [{
     key: 'create',
@@ -1512,53 +1545,480 @@ var doOperator = function doOperator(_next, _error, _complete) {
   };
 };
 
-function delayOperator() {
-  var delay = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-  return function (observer) {
-    var queue = [];
-    var count = 0;
-    var index = 0;
+var Action = function (_Subscription) {
+  inherits(Action, _Subscription);
 
-    function execute() {
-      var state = queue.shift();
-      if (state.type === 'N') {
-        setTimeout(function () {
-          index++;
-          observer.next(state.value);
-          if (count === index && queue.length > 0) {
-            execute();
-          }
-        }, delay);
-      } else if (state.type === 'E') {
-        observer.error(state.value);
-      } else {
-        observer.complete();
-      }
+  function Action(scheduler, work) {
+    classCallCheck(this, Action);
+
+    var _this = possibleConstructorReturn(this, (Action.__proto__ || Object.getPrototypeOf(Action)).call(this));
+
+    _this.scheduler = scheduler;
+    _this.work = work;
+    return _this;
+  }
+
+  // 该方法需要在子类中重写
+
+
+  createClass(Action, [{
+    key: 'schedule',
+    value: function schedule(state, delay) {
+      return this;
+    }
+  }]);
+  return Action;
+}(Subscription);
+
+var AsyncAction = function (_Action) {
+  inherits(AsyncAction, _Action);
+
+  function AsyncAction() {
+    var _ref;
+
+    var _temp, _this, _ret;
+
+    classCallCheck(this, AsyncAction);
+
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
     }
 
-    return {
-      next: function next(value) {
-        queue.push({
-          type: 'N',
-          value: value
-        });
-        count++;
-        execute();
-      },
-      error: function error(value) {
-        queue.push({
-          type: 'E',
-          value: value
-        });
-      },
-      complete: function complete() {
-        queue.push({
-          type: 'C'
-        });
+    return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = AsyncAction.__proto__ || Object.getPrototypeOf(AsyncAction)).call.apply(_ref, [this].concat(args))), _this), _this.id = null, _this.state = undefined, _this.delay = 0, _this.pending = false, _temp), possibleConstructorReturn(_this, _ret);
+  }
+
+  createClass(AsyncAction, [{
+    key: 'schedule',
+    value: function schedule(state) {
+      var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+      if (this.closed) return this;
+
+      this.state = state;
+      this.delay = delay;
+      this.pending = true;
+      var scheduler = this.scheduler,
+          id = this.id;
+
+      if (id != null) {
+        id = this.recycleAsyncId(scheduler, id, delay);
       }
-    };
+      if (!id) {
+        id = this.requestAsyncId(scheduler, id, delay);
+      }
+      this.id = id;
+      return this;
+    }
+  }, {
+    key: 'recycleAsyncId',
+    value: function recycleAsyncId(scheduler, id, delay) {
+      if (delay !== null && this.delay === delay && this.pending === false) {
+        return id;
+      }
+      clearInterval(id);
+      return undefined;
+    }
+  }, {
+    key: 'requestAsyncId',
+    value: function requestAsyncId(scheduler, id, delay) {
+      return setInterval(scheduler.flush.bind(scheduler, this), delay);
+    }
+  }, {
+    key: 'execute',
+    value: function execute(state) {
+      if (this.closed) {
+        return new Error('executing a cancelled action');
+      }
+      this.pending = false;
+      var error = this._execute(state);
+      if (error) {
+        return error;
+      } else if (this.pending === false && this.id != null) {
+        this.id = this.recycleAsyncId(this.scheduler, this.id, null);
+      }
+    }
+  }, {
+    key: '_execute',
+    value: function _execute(state) {
+      try {
+        this.work(state);
+      } catch (e) {
+        this.unsubscribe();
+        return e;
+      }
+    }
+  }, {
+    key: '_unsubscribe',
+    value: function _unsubscribe() {
+      var id = this.id;
+      var scheduler = this.scheduler;
+      var actions = scheduler.actions;
+      var index = actions.indexOf(this);
+
+      this.work = null;
+      this.state = null;
+      this.pending = false;
+      this.scheduler = null;
+
+      if (index !== -1) {
+        actions.splice(index, 1);
+      }
+
+      if (id != null) {
+        this.id = this.recycleAsyncId(scheduler, id, null);
+      }
+
+      this.delay = null;
+    }
+  }]);
+  return AsyncAction;
+}(Action);
+
+var AsapAction = function (_AsyncAction) {
+  inherits(AsapAction, _AsyncAction);
+
+  function AsapAction() {
+    classCallCheck(this, AsapAction);
+    return possibleConstructorReturn(this, (AsapAction.__proto__ || Object.getPrototypeOf(AsapAction)).apply(this, arguments));
+  }
+
+  createClass(AsapAction, [{
+    key: 'requestAsyncId',
+    value: function requestAsyncId(scheduler, id) {
+      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      if (delay != null && delay > 0) {
+        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
+      }
+      scheduler.actions.push(this);
+      return scheduler.scheduled || (scheduler.scheduled = setImmediate(scheduler.flush.bind(scheduler, null)));
+    }
+  }, {
+    key: 'recycleAsyncId',
+    value: function recycleAsyncId(scheduler, id) {
+      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
+        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'recycleAsyncId', this).call(this, scheduler, id, delay);
+      }
+
+      if (scheduler.actions.length === 0) {
+        clearImmediate(id);
+        scheduler.scheduled = undefined;
+      }
+
+      return undefined;
+    }
+  }]);
+  return AsapAction;
+}(AsyncAction);
+
+var AsyncScheduler = function (_Scheduler) {
+  inherits(AsyncScheduler, _Scheduler);
+
+  function AsyncScheduler() {
+    var _ref;
+
+    var _temp, _this, _ret;
+
+    classCallCheck(this, AsyncScheduler);
+
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = AsyncScheduler.__proto__ || Object.getPrototypeOf(AsyncScheduler)).call.apply(_ref, [this].concat(args))), _this), _this.actions = [], _this.active = false, _this.scheduled = undefined, _temp), possibleConstructorReturn(_this, _ret);
+  }
+
+  createClass(AsyncScheduler, [{
+    key: 'flush',
+    value: function flush(action) {
+      var actions = this.actions;
+      // 在schedule中继续调用schedule，如果schedule是同步的（QueueScheduler），只需要添加队列中等待执行即可
+
+      if (this.active) {
+        actions.push(action);
+        return;
+      }
+      this.active = true;
+      var error = void 0;
+      do {
+        if (error = action.execute(action.state, action.delay)) {
+          break;
+        }
+      } while (action = actions.shift());
+      this.active = false;
+      if (error) {
+        while (action = actions.shift()) {
+          action.unsubscribe();
+        }
+        throw error;
+      }
+    }
+  }]);
+  return AsyncScheduler;
+}(Scheduler);
+
+var AsapScheduler = function (_AsyncScheduler) {
+  inherits(AsapScheduler, _AsyncScheduler);
+
+  function AsapScheduler() {
+    classCallCheck(this, AsapScheduler);
+    return possibleConstructorReturn(this, (AsapScheduler.__proto__ || Object.getPrototypeOf(AsapScheduler)).apply(this, arguments));
+  }
+
+  createClass(AsapScheduler, [{
+    key: 'flush',
+    value: function flush(action) {
+      this.active = true;
+      this.scheduled = undefined;
+      var actions = this.actions;
+      var error = void 0;
+      action = action || actions.shift();
+      do {
+        if (error = action.execute(action.state, action.delay)) break;
+      } while (action = actions.shift());
+
+      this.active = false;
+
+      if (error) {
+        while (action = actions.shift()) {
+          action.unsubscribe();
+        }
+        throw error;
+      }
+    }
+  }]);
+  return AsapScheduler;
+}(AsyncScheduler);
+
+var asap = new AsapScheduler(AsapAction);
+
+var async = new AsyncScheduler(AsyncAction);
+
+var AnimationFrameAction = function (_AsyncAction) {
+  inherits(AnimationFrameAction, _AsyncAction);
+
+  function AnimationFrameAction() {
+    classCallCheck(this, AnimationFrameAction);
+    return possibleConstructorReturn(this, (AnimationFrameAction.__proto__ || Object.getPrototypeOf(AnimationFrameAction)).apply(this, arguments));
+  }
+
+  createClass(AnimationFrameAction, [{
+    key: 'requestAsyncId',
+    value: function requestAsyncId(scheduler, id) {
+      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      if (delay != null && delay > 0) {
+        return get(AnimationFrameAction.prototype.__proto__ || Object.getPrototypeOf(AnimationFrameAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
+      }
+      scheduler.actions.push(this);
+      return scheduler.scheduled || (scheduler.scheduled = requestAnimationFrame(scheduler.flush.bind(scheduler, null)));
+    }
+  }, {
+    key: 'recycleAsyncId',
+    value: function recycleAsyncId(scheduler, id) {
+      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
+        return get(AnimationFrameAction.prototype.__proto__ || Object.getPrototypeOf(AnimationFrameAction.prototype), 'recycleAsyncId', this).call(this, scheduler, id, delay);
+      }
+
+      if (scheduler.actions.length === 0) {
+        cancelAnimationFrame(id);
+        scheduler.scheduled = undefined;
+      }
+
+      return undefined;
+    }
+  }]);
+  return AnimationFrameAction;
+}(AsyncAction);
+
+var AnimationFrameScheduler = function (_AsyncScheduler) {
+  inherits(AnimationFrameScheduler, _AsyncScheduler);
+
+  function AnimationFrameScheduler() {
+    classCallCheck(this, AnimationFrameScheduler);
+    return possibleConstructorReturn(this, (AnimationFrameScheduler.__proto__ || Object.getPrototypeOf(AnimationFrameScheduler)).apply(this, arguments));
+  }
+
+  createClass(AnimationFrameScheduler, [{
+    key: 'flush',
+    value: function flush(action) {
+      this.active = true;
+      this.scheduled = undefined;
+      var actions = this.actions;
+      var error = void 0;
+      action = action || actions.shift();
+      do {
+        if (error = action.execute(action.state, action.delay)) break;
+      } while (action = actions.shift());
+
+      this.active = false;
+
+      if (error) {
+        while (action = actions.shift()) {
+          action.unsubscribe();
+        }
+        throw error;
+      }
+    }
+  }]);
+  return AnimationFrameScheduler;
+}(AsyncScheduler);
+
+var animationFrame = new AnimationFrameScheduler(AnimationFrameAction);
+
+var QueueAction = function (_AsyncAction) {
+  inherits(QueueAction, _AsyncAction);
+
+  function QueueAction() {
+    classCallCheck(this, QueueAction);
+    return possibleConstructorReturn(this, (QueueAction.__proto__ || Object.getPrototypeOf(QueueAction)).apply(this, arguments));
+  }
+
+  createClass(QueueAction, [{
+    key: 'schedule',
+    value: function schedule(state) {
+      var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+      if (this.closed) return this;
+      if (delay > 0) {
+        return get(QueueAction.prototype.__proto__ || Object.getPrototypeOf(QueueAction.prototype), 'schedule', this).call(this, state, delay);
+      }
+
+      this.state = state;
+      this.delay = delay;
+      this.scheduler.flush(this);
+      return this;
+    }
+  }, {
+    key: 'requestAsyncId',
+    value: function requestAsyncId(scheduler, id, delay) {
+      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
+        return get(QueueAction.prototype.__proto__ || Object.getPrototypeOf(QueueAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
+      }
+      return scheduler.flush(this);
+    }
+  }]);
+  return QueueAction;
+}(AsyncAction);
+
+var QueueScheduler = function (_AsyncScheduler) {
+  inherits(QueueScheduler, _AsyncScheduler);
+
+  function QueueScheduler() {
+    classCallCheck(this, QueueScheduler);
+    return possibleConstructorReturn(this, (QueueScheduler.__proto__ || Object.getPrototypeOf(QueueScheduler)).apply(this, arguments));
+  }
+
+  return QueueScheduler;
+}(AsyncScheduler);
+
+var queue = new QueueScheduler(QueueAction);
+
+var Scheduler$1 = {
+  async: async,
+  asap: asap,
+  animationFrame: animationFrame,
+  queue: queue
+};
+
+function delayOperator() {
+  var delay = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+  var scheduler = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Scheduler$1.async;
+
+  var absoluteDelay = isDate(delay);
+  var delayFor = absoluteDelay ? +delay - scheduler.now() : Math.abs(delay);
+  return function (observer) {
+    return new DelaySubscriber(observer, delayFor, scheduler);
   };
 }
+
+var DelaySubscriber = function (_Subscriber) {
+  inherits(DelaySubscriber, _Subscriber);
+
+  function DelaySubscriber(destination, delay, scheduler) {
+    classCallCheck(this, DelaySubscriber);
+
+    var _this = possibleConstructorReturn(this, (DelaySubscriber.__proto__ || Object.getPrototypeOf(DelaySubscriber)).call(this, destination));
+
+    _this.delay = delay;
+    _this.scheduler = scheduler;
+    _this.queue = [];
+    _this.active = false;
+    _this.errored = false;
+    return _this;
+  }
+
+  createClass(DelaySubscriber, [{
+    key: '_schedule',
+    value: function _schedule(scheduler) {
+      this.active = true;
+      this.add(scheduler.schedule(DelaySubscriber.dispatch, this.delay, {
+        source: this,
+        destination: this.destination,
+        scheduler: scheduler
+      }));
+    }
+  }, {
+    key: 'scheduleNotification',
+    value: function scheduleNotification(notification) {
+      if (this.errored === true) {
+        return;
+      }
+
+      var scheduler = this.scheduler;
+      var message = {
+        time: scheduler.now() + this.delay,
+        notification: notification
+      };
+      this.queue.push(message);
+
+      if (this.active === false) {
+        this._schedule(scheduler);
+      }
+    }
+  }, {
+    key: '_next',
+    value: function _next(value) {
+      this.scheduleNotification(Notification.createNext(value));
+    }
+  }, {
+    key: '_error',
+    value: function _error(err) {
+      this.errored = true;
+      this.queue = [];
+      this.destination.error(err);
+    }
+  }, {
+    key: '_complete',
+    value: function _complete() {
+      this.scheduleNotification(Notification.createComplete());
+    }
+  }], [{
+    key: 'dispatch',
+    value: function dispatch(state) {
+      var source = state.source;
+      var queue = source.queue;
+      var scheduler = state.scheduler;
+      var destination = state.destination;
+
+      while (queue.length > 0 && queue[0].time - scheduler.now() <= 0) {
+        queue.shift().notification.observe(destination);
+      }
+
+      if (queue.length > 0) {
+        var delay = Math.max(0, queue[0].time - scheduler.now());
+        this.schedule(state, delay);
+      } else {
+        source.active = false;
+      }
+    }
+  }]);
+  return DelaySubscriber;
+}(Subscriber);
 
 function takeOperator() {
   var number = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : Number.POSITIVE_INFINITY;
@@ -1569,7 +2029,8 @@ function takeOperator() {
   return function (observer) {
     var count = 0;
     if (number === 0) {
-      return observer.complete();
+      observer.complete();
+      return false;
     }
     return function (val) {
       count++;
@@ -1839,6 +2300,211 @@ var MergeMapSubscriber = function (_OuterSubscriber) {
   return MergeMapSubscriber;
 }(OuterSubscriber);
 
+function distinctUntilChangedOperator(compare, keySelector) {
+  var selectable = isFunction(keySelector);
+  compare = isFunction(compare) ? compare : function (a, b) {
+    return a === b;
+  };
+  return function (observer) {
+    var emited = false;
+    var key = void 0;
+    var prevKey = void 0;
+    return function (value) {
+      try {
+        if (selectable) {
+          key = keySelector(value);
+        } else {
+          key = value;
+        }
+
+        if (!emited || Boolean(compare(prevKey, key)) === false) {
+          observer.next(value);
+        }
+
+        emited = true;
+        prevKey = key;
+      } catch (e) {
+        observer.error(e);
+      }
+    };
+  };
+}
+
+function startWithOperator() {
+  for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  var scheduler = args[args.length - 1];
+  var hasScheduler = false;
+  if (isScheduler(scheduler)) {
+    args.pop();
+    hasScheduler = true;
+  }
+  var length = args.length;
+
+  // 不能使用箭头函数
+  var dispatch = function dispatch(state) {
+    var values = state.values,
+        index = state.index,
+        length = state.length,
+        observer = state.observer;
+
+    if (index >= length) return;
+    observer.next(values[index]);
+    state.index = index + 1;
+    this.schedule(state);
+  };
+  return function (observer) {
+    if (hasScheduler) {
+      scheduler.schedule(dispatch, 0, {
+        values: args,
+        index: 0,
+        length: length,
+        observer: observer
+      });
+    } else {
+      for (var i = 0; i < length; i++) {
+        observer.next(args[i]);
+      }
+    }
+  };
+}
+
+function combineLatestOperator(others, project) {
+  return function (observer) {
+    return new combineLatestSubscriber(observer, others, project);
+  };
+}
+
+var combineLatestSubscriber = function (_Subscriber) {
+  inherits(combineLatestSubscriber, _Subscriber);
+
+  function combineLatestSubscriber(destination, others, project) {
+    classCallCheck(this, combineLatestSubscriber);
+
+    var _this = possibleConstructorReturn(this, (combineLatestSubscriber.__proto__ || Object.getPrototypeOf(combineLatestSubscriber)).call(this, destination));
+
+    _this.streams = isArray(others) ? others : [others];
+    _this.initState();
+    _this.project = project;
+    _this.allHasValue = false;
+    _this.observeOnStreams();
+    return _this;
+  }
+
+  createClass(combineLatestSubscriber, [{
+    key: 'initState',
+    value: function initState() {
+      var size = this.size = this.streams.length + 1;
+      var states = this.states = new Array(this.size);
+      for (var i = 0; i < size; i++) {
+        states[i] = {
+          hasValue: false,
+          value: undefined,
+          isStopped: false
+        };
+      }
+    }
+  }, {
+    key: '_next',
+    value: function _next(value) {
+      this.setNext(0, value);
+    }
+  }, {
+    key: '_error',
+    value: function _error(err) {
+      this.notifyError(err);
+    }
+  }, {
+    key: '_complete',
+    value: function _complete() {
+      this.setComplete(0);
+      this.unsubscribe();
+    }
+  }, {
+    key: '_tryProject',
+    value: function _tryProject(values) {
+      try {
+        var data = this.project.apply(this, values);
+        this.destination.next(data);
+      } catch (err) {
+        this.notifyError(err);
+      }
+    }
+  }, {
+    key: 'notifyNext',
+    value: function notifyNext() {
+      var states = this.states,
+          size = this.size;
+
+      if (!this.allHasValue) {
+        var res = states.filter(function (state) {
+          return state.hasValue;
+        });
+        this.allHasValue = res.length === size;
+      }
+
+      if (this.allHasValue) {
+        var values = states.map(function (state) {
+          return state.value;
+        });
+        this._tryProject(values);
+      }
+    }
+  }, {
+    key: 'notifyComplete',
+    value: function notifyComplete() {
+      var res = this.states.filter(function (state) {
+        return state.isStopped;
+      });
+      if (res.length === this.size) {
+        this.destination.complete();
+      }
+    }
+  }, {
+    key: 'notifyError',
+    value: function notifyError(err) {
+      this.destination.error(err);
+      this.streams.forEach(function (stream) {
+        stream.error(err);
+      });
+    }
+  }, {
+    key: 'setNext',
+    value: function setNext(index, value) {
+      var state = this.states[index];
+      state.hasValue = true;
+      state.value = value;
+      this.notifyNext();
+    }
+  }, {
+    key: 'setComplete',
+    value: function setComplete(index) {
+      this.states[index].isStopped = true;
+      this.notifyComplete();
+    }
+  }, {
+    key: 'observeOnStreams',
+    value: function observeOnStreams() {
+      var _this2 = this;
+
+      var subs = this.streams.map(function (stream, index) {
+        return stream.subscribe(function (value) {
+          _this2.setNext(index + 1, value);
+        }, function (err) {
+          _this2.notifyError(err);
+        }, function () {
+          _this2.setComplete(index + 1);
+        });
+      });
+
+      this.add(subs);
+    }
+  }]);
+  return combineLatestSubscriber;
+}(Subscriber);
+
 Observable.prototype.do = function (nextOrObserver, error, complete) {
   return this.lift(doOperator(nextOrObserver, error, complete));
 };
@@ -1861,6 +2527,18 @@ Observable.prototype.map = function (project, context) {
 
 Observable.prototype.mergeMap = function (project, resultSelector, concurrent) {
   return this.lift(mergeMapOperator(project, resultSelector, concurrent));
+};
+
+Observable.prototype.distinctUntilChanged = function (compare, keySelector) {
+  return this.lift(distinctUntilChangedOperator(compare, keySelector));
+};
+
+Observable.prototype.startWith = function () {
+  return this.lift(startWithOperator.apply(undefined, arguments));
+};
+
+Observable.prototype.combineLatest = function (other, project) {
+  return this.lift(combineLatestOperator(other, project));
 };
 
 var Subject = function (_Observable) {
@@ -2254,386 +2932,6 @@ var ReplaySubject = function (_Subject) {
   return ReplaySubject;
 }(Subject);
 
-var Action = function (_Subscription) {
-  inherits(Action, _Subscription);
-
-  function Action(scheduler, work) {
-    classCallCheck(this, Action);
-
-    var _this = possibleConstructorReturn(this, (Action.__proto__ || Object.getPrototypeOf(Action)).call(this));
-
-    _this.scheduler = scheduler;
-    _this.work = work;
-    return _this;
-  }
-
-  // 该方法需要在子类中重写
-
-
-  createClass(Action, [{
-    key: 'schedule',
-    value: function schedule(state, delay) {
-      return this;
-    }
-  }]);
-  return Action;
-}(Subscription);
-
-var AsyncAction = function (_Action) {
-  inherits(AsyncAction, _Action);
-
-  function AsyncAction() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
-    classCallCheck(this, AsyncAction);
-
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = AsyncAction.__proto__ || Object.getPrototypeOf(AsyncAction)).call.apply(_ref, [this].concat(args))), _this), _this.id = null, _this.state = undefined, _this.delay = 0, _this.pending = false, _temp), possibleConstructorReturn(_this, _ret);
-  }
-
-  createClass(AsyncAction, [{
-    key: 'schedule',
-    value: function schedule(state) {
-      var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-
-      if (this.closed) return this;
-
-      this.state = state;
-      this.delay = delay;
-      this.pending = true;
-      var scheduler = this.scheduler,
-          id = this.id;
-
-      if (id != null) {
-        id = this.recycleAsyncId(scheduler, id, delay);
-      }
-      if (!id) {
-        id = this.requestAsyncId(scheduler, id, delay);
-      }
-      this.id = id;
-      return this;
-    }
-  }, {
-    key: 'recycleAsyncId',
-    value: function recycleAsyncId(scheduler, id, delay) {
-      if (delay !== null && this.delay === delay && this.pending === false) {
-        return id;
-      }
-      clearInterval(id);
-      return undefined;
-    }
-  }, {
-    key: 'requestAsyncId',
-    value: function requestAsyncId(scheduler, id, delay) {
-      return setInterval(scheduler.flush.bind(scheduler, this), delay);
-    }
-  }, {
-    key: 'execute',
-    value: function execute(state) {
-      if (this.closed) {
-        return new Error('executing a cancelled action');
-      }
-      this.pending = false;
-      var error = this._execute(state);
-      if (error) {
-        return error;
-      } else if (this.pending === false && this.id != null) {
-        this.id = this.recycleAsyncId(this.scheduler, this.id, null);
-      }
-    }
-  }, {
-    key: '_execute',
-    value: function _execute(state) {
-      try {
-        this.work(state);
-      } catch (e) {
-        this.unsubscribe();
-        return e;
-      }
-    }
-  }, {
-    key: '_unsubscribe',
-    value: function _unsubscribe() {
-      var id = this.id;
-      var scheduler = this.scheduler;
-      var actions = scheduler.actions;
-      var index = actions.indexOf(this);
-
-      this.work = null;
-      this.state = null;
-      this.pending = false;
-      this.scheduler = null;
-
-      if (index !== -1) {
-        actions.splice(index, 1);
-      }
-
-      if (id != null) {
-        this.id = this.recycleAsyncId(scheduler, id, null);
-      }
-
-      this.delay = null;
-    }
-  }]);
-  return AsyncAction;
-}(Action);
-
-var AsapAction = function (_AsyncAction) {
-  inherits(AsapAction, _AsyncAction);
-
-  function AsapAction() {
-    classCallCheck(this, AsapAction);
-    return possibleConstructorReturn(this, (AsapAction.__proto__ || Object.getPrototypeOf(AsapAction)).apply(this, arguments));
-  }
-
-  createClass(AsapAction, [{
-    key: 'requestAsyncId',
-    value: function requestAsyncId(scheduler, id) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      if (delay != null && delay > 0) {
-        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
-      }
-      scheduler.actions.push(this);
-      return scheduler.scheduled || (scheduler.scheduled = setImmediate(scheduler.flush.bind(scheduler, null)));
-    }
-  }, {
-    key: 'recycleAsyncId',
-    value: function recycleAsyncId(scheduler, id) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
-        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'recycleAsyncId', this).call(this, scheduler, id, delay);
-      }
-
-      if (scheduler.actions.length === 0) {
-        clearImmediate(id);
-        scheduler.scheduled = undefined;
-      }
-
-      return undefined;
-    }
-  }]);
-  return AsapAction;
-}(AsyncAction);
-
-var AsyncScheduler = function (_Scheduler) {
-  inherits(AsyncScheduler, _Scheduler);
-
-  function AsyncScheduler() {
-    var _ref;
-
-    var _temp, _this, _ret;
-
-    classCallCheck(this, AsyncScheduler);
-
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = AsyncScheduler.__proto__ || Object.getPrototypeOf(AsyncScheduler)).call.apply(_ref, [this].concat(args))), _this), _this.actions = [], _this.active = false, _this.scheduled = undefined, _temp), possibleConstructorReturn(_this, _ret);
-  }
-
-  createClass(AsyncScheduler, [{
-    key: 'flush',
-    value: function flush(action) {
-      var actions = this.actions;
-      // 在schedule中继续调用schedule，如果schedule是同步的（QueueScheduler），只需要添加队列中等待执行即可
-
-      if (this.active) {
-        actions.push(action);
-        return;
-      }
-      this.active = true;
-      var error = void 0;
-      do {
-        if (error = action.execute(action.state, action.delay)) {
-          break;
-        }
-      } while (action = actions.shift());
-      this.active = false;
-      if (error) {
-        while (action = actions.shift()) {
-          action.unsubscribe();
-        }
-        throw error;
-      }
-    }
-  }]);
-  return AsyncScheduler;
-}(Scheduler);
-
-var AsapScheduler = function (_AsyncScheduler) {
-  inherits(AsapScheduler, _AsyncScheduler);
-
-  function AsapScheduler() {
-    classCallCheck(this, AsapScheduler);
-    return possibleConstructorReturn(this, (AsapScheduler.__proto__ || Object.getPrototypeOf(AsapScheduler)).apply(this, arguments));
-  }
-
-  createClass(AsapScheduler, [{
-    key: 'flush',
-    value: function flush(action) {
-      this.active = true;
-      this.scheduled = undefined;
-      var actions = this.actions;
-      var error = void 0;
-      action = action || actions.shift();
-      do {
-        if (error = action.execute(action.state, action.delay)) break;
-      } while (action = actions.shift());
-
-      this.active = false;
-
-      if (error) {
-        while (action = actions.shift()) {
-          action.unsubscribe();
-        }
-        throw error;
-      }
-    }
-  }]);
-  return AsapScheduler;
-}(AsyncScheduler);
-
-var asap = new AsapScheduler(AsapAction);
-
-var async = new AsyncScheduler(AsyncAction);
-
-var AnimationFrameAction = function (_AsyncAction) {
-  inherits(AnimationFrameAction, _AsyncAction);
-
-  function AnimationFrameAction() {
-    classCallCheck(this, AnimationFrameAction);
-    return possibleConstructorReturn(this, (AnimationFrameAction.__proto__ || Object.getPrototypeOf(AnimationFrameAction)).apply(this, arguments));
-  }
-
-  createClass(AnimationFrameAction, [{
-    key: 'requestAsyncId',
-    value: function requestAsyncId(scheduler, id) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      if (delay != null && delay > 0) {
-        return get(AnimationFrameAction.prototype.__proto__ || Object.getPrototypeOf(AnimationFrameAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
-      }
-      scheduler.actions.push(this);
-      return scheduler.scheduled || (scheduler.scheduled = requestAnimationFrame(scheduler.flush.bind(scheduler, null)));
-    }
-  }, {
-    key: 'recycleAsyncId',
-    value: function recycleAsyncId(scheduler, id) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
-        return get(AnimationFrameAction.prototype.__proto__ || Object.getPrototypeOf(AnimationFrameAction.prototype), 'recycleAsyncId', this).call(this, scheduler, id, delay);
-      }
-
-      if (scheduler.actions.length === 0) {
-        cancelAnimationFrame(id);
-        scheduler.scheduled = undefined;
-      }
-
-      return undefined;
-    }
-  }]);
-  return AnimationFrameAction;
-}(AsyncAction);
-
-var AnimationFrameScheduler = function (_AsyncScheduler) {
-  inherits(AnimationFrameScheduler, _AsyncScheduler);
-
-  function AnimationFrameScheduler() {
-    classCallCheck(this, AnimationFrameScheduler);
-    return possibleConstructorReturn(this, (AnimationFrameScheduler.__proto__ || Object.getPrototypeOf(AnimationFrameScheduler)).apply(this, arguments));
-  }
-
-  createClass(AnimationFrameScheduler, [{
-    key: 'flush',
-    value: function flush(action) {
-      this.active = true;
-      this.scheduled = undefined;
-      var actions = this.actions;
-      var error = void 0;
-      action = action || actions.shift();
-      do {
-        if (error = action.execute(action.state, action.delay)) break;
-      } while (action = actions.shift());
-
-      this.active = false;
-
-      if (error) {
-        while (action = actions.shift()) {
-          action.unsubscribe();
-        }
-        throw error;
-      }
-    }
-  }]);
-  return AnimationFrameScheduler;
-}(AsyncScheduler);
-
-var animationFrame = new AnimationFrameScheduler(AnimationFrameAction);
-
-var QueueAction = function (_AsyncAction) {
-  inherits(QueueAction, _AsyncAction);
-
-  function QueueAction() {
-    classCallCheck(this, QueueAction);
-    return possibleConstructorReturn(this, (QueueAction.__proto__ || Object.getPrototypeOf(QueueAction)).apply(this, arguments));
-  }
-
-  createClass(QueueAction, [{
-    key: 'schedule',
-    value: function schedule(state) {
-      var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-
-      if (this.closed) return this;
-      if (delay > 0) {
-        return get(QueueAction.prototype.__proto__ || Object.getPrototypeOf(QueueAction.prototype), 'schedule', this).call(this, state, delay);
-      }
-
-      this.state = state;
-      this.delay = delay;
-      this.scheduler.flush(this);
-      return this;
-    }
-  }, {
-    key: 'requestAsyncId',
-    value: function requestAsyncId(scheduler, id, delay) {
-      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
-        return get(QueueAction.prototype.__proto__ || Object.getPrototypeOf(QueueAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
-      }
-      return scheduler.flush(this);
-    }
-  }]);
-  return QueueAction;
-}(AsyncAction);
-
-var QueueScheduler = function (_AsyncScheduler) {
-  inherits(QueueScheduler, _AsyncScheduler);
-
-  function QueueScheduler() {
-    classCallCheck(this, QueueScheduler);
-    return possibleConstructorReturn(this, (QueueScheduler.__proto__ || Object.getPrototypeOf(QueueScheduler)).apply(this, arguments));
-  }
-
-  return QueueScheduler;
-}(AsyncScheduler);
-
-var queue = new QueueScheduler(QueueAction);
-
-var Scheduler$1 = {
-  async: async,
-  asap: asap,
-  animationFrame: animationFrame,
-  queue: queue
-};
-
 exports.Observable = Observable;
 exports.ArgumentOutOfRangeError = ArgumentOutOfRangeError;
 exports.ObjectUnsubscribedError = ObjectUnsubscribedError;
@@ -2652,3 +2950,4 @@ exports.Notification = Notification;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
+//# sourceMappingURL=rx.js.map

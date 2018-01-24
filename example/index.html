@@ -12,23 +12,20 @@
 <body>
 <script src="../dist/rx.js"></script>
 <script>
-var Observable = Rx.Observable
-var source = Observable.from([4, 3, 2, 1])
-var project = function () {
-  return Observable.from(Promise.resolve(42))
-}
-var results = []
-source.mergeMap(project).subscribe(
-  function (x) {
+var Subject = Rx.Subject
+var subject1 = new Subject()
+var subject2 = new Subject()
+var subscription = subject1
+  .combineLatest(subject2, function (x, y) {
+    return x + y
+  })
+  .subscribe((x) => {
     console.log(x)
-  },
-  function () {
-    console.log('err')
-  },
-  function () {
-    console.log('C')
-  }
-)
+  })
+
+var unsubscribe = function () {
+  subscription.unsubscribe()
+}
 </script>
 </body>
 </html>

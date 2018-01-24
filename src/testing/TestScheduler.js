@@ -90,6 +90,7 @@ export class TestScheduler extends VirtualTimeScheduler {
     const unsubscriptionFrame = TestScheduler.parseMarblesAsSubscriptions(
       unsubscriptionMarbles
     ).unsubscribedFrame
+
     let subscription
     this.schedule(() => {
       subscription = observable.subscribe(
