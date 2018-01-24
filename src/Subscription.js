@@ -1,4 +1,4 @@
-import { isFunction, _Set } from './utils'
+import { isFunction, _Set, isArray } from './utils'
 
 let uid = 0
 export class Subscription {
@@ -39,13 +39,19 @@ export class Subscription {
       })
     } else if (observer instanceof Subscription) {
       this._add(observer)
+    } else if (isArray(observer)) {
+      const list = observer
+      const length = list.length
+      for (let i = 0; i < length; i++) {
+        this.add(list[i])
+      }
     }
   }
 
   _add (observer) {
     const { _set, observers } = this
     if (!_set.has(observer._uid)) {
-      _set.add(uid)
+      _set.add(observer._uid)
       observers.push(observer)
     }
   }
