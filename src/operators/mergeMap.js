@@ -2,6 +2,25 @@ import { OuterSubscriber } from '../OuterSubscriber'
 import { isNumber } from '../utils'
 import { subscribeToResult } from '../utils/subscribeToResult'
 
+/**
+ * 由当前流触发多个流按时间穿插合并到一起
+ * 具体用途：
+ *
+ *
+ 触发时间节点
+ hot: 'a---b-----------c-------d-------|       '
+ a_c: '----a---a---a---(a|)                    '
+ b_c: '    ----b---b---(b|)                    '
+ c_c: '                ----c---c---c---c---(c|)'
+ d_c: '                        ----(d|)        '
+ exp: '----a---(ab)(ab)(ab)c---c---(cd)c---(c|)'
+ sub: '^                                   !   '
+ *
+ * @param project 待合并的流
+ * @param resultSelector 对流的值进行处理
+ * @param concurrent 同时并发的数量
+ * @returns {function(*=): MergeMapSubscriber}
+ */
 export function mergeMapOperator (
   project,
   resultSelector,
