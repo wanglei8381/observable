@@ -1,4 +1,4 @@
-import { filterOperator } from '../../operators'
+import { filterOperator } from '../../operators/filter'
 import { Observable } from '../../Observable'
 
 Observable.prototype.filter = function (predicate, context) {

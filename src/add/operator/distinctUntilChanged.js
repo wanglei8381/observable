@@ -1,4 +1,4 @@
-import { distinctUntilChangedOperator } from '../../operators'
+import { distinctUntilChangedOperator } from '../../operators/distinctUntilChanged'
 import { Observable } from '../../Observable'
 
 Observable.prototype.distinctUntilChanged = function (compare, keySelector) {

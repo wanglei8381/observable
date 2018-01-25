@@ -1,4 +1,4 @@
-import { startWithOperator } from '../../operators'
+import { startWithOperator } from '../../operators/startWith'
 import { Observable } from '../../Observable'
 
 Observable.prototype.startWith = function (...args) {

@@ -1,4 +1,4 @@
-import { doOperator } from '../../operators'
+import { doOperator } from '../../operators/do'
 import { Observable } from '../../Observable'
 
 Observable.prototype.do = function (nextOrObserver, error, complete) {

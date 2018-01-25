@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { makeMap } from './makeMap'
 const methodMap = makeMap('OPTIONS,GET,HEAD,POST,PUT,DELETE,TRACE,CONNECT')
-export function ajax (options = {}) {
+export function ajax(options = {}) {
   const {
     url,
     data = null,
@@ -11,9 +11,9 @@ export function ajax (options = {}) {
     responseType
   } = options
   if (!methodMap(method)) throw new Error('method error')
-  return new Promise(function (resolve, reject) {
+  return new Promise(function(resolve, reject) {
     const xhr = new XMLHttpRequest()
-    xhr.onload = function () {
+    xhr.onload = function() {
       var data = {
         status: xhr.status,
         statusText: xhr.statusText,
@@ -23,11 +23,11 @@ export function ajax (options = {}) {
       resolve(data)
     }
 
-    xhr.onerror = function () {
+    xhr.onerror = function() {
       reject(new Error('error'))
     }
 
-    xhr.ontimeout = function () {
+    xhr.ontimeout = function() {
       reject(new Error('timeout'))
     }
 
@@ -45,6 +45,6 @@ export function ajax (options = {}) {
   })
 }
 
-function parseHeaders (rawHeaders) {
+function parseHeaders(rawHeaders) {
   return rawHeaders
 }

@@ -1,4 +1,4 @@
-import { mapOperator } from '../../operators'
+import { mapOperator } from '../../operators/map'
 import { Observable } from '../../Observable'
 
 Observable.prototype.map = function (project, context) {

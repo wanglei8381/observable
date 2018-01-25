@@ -1,4 +1,4 @@
-import { mergeMapOperator } from '../../operators'
+import { mergeMapOperator } from '../../operators/mergeMap'
 import { Observable } from '../../Observable'
 
 Observable.prototype.mergeMap = function (project, resultSelector, concurrent) {

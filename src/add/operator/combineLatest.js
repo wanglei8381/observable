@@ -1,4 +1,4 @@
-import { combineLatestOperator } from '../../operators'
+import { combineLatestOperator } from '../../operators/combineLatest'
 import { Observable } from '../../Observable'
 import { isArray } from '../../utils'
 import { ArrayObservable } from '../../observables/ArrayObservable'
