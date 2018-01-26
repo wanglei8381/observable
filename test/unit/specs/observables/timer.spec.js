@@ -1,7 +1,7 @@
 import { Observable } from '@'
 
 describe('Observable.timer', function () {
-  it.skip('timer(3000, 1000) should create an observable emitting periodically', function () {
+  it('timer(3000, 1000) should create an observable emitting periodically', function () {
     var e1 = Observable.timer(60, 20, rxTestScheduler)
       .take(4) // make it actually finite, so it can be rendered
       .concat(Observable.never()) // but pretend it's infinite by not completing

@@ -201,7 +201,7 @@ describe('Observable.merge(...observables, Scheduler, number)', function () {
       expected
     )
   })
-  it.skip('should use the scheduler even when one Observable is merged', function (done) {
+  it('should use the scheduler even when one Observable is merged', function (done) {
     var e1Subscribed = false
     var e1 = Observable.defer(function () {
       e1Subscribed = true

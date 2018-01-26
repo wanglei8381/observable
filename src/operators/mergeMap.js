@@ -1,5 +1,5 @@
 import { OuterSubscriber } from '../OuterSubscriber'
-import { isNumber } from '../utils'
+import { isNumber, identity } from '../utils'
 import { subscribeToResult } from '../utils/subscribeToResult'
 
 /**
@@ -23,7 +23,7 @@ import { subscribeToResult } from '../utils/subscribeToResult'
  * @returns {function(*=): MergeMapSubscriber}
  */
 export function mergeMapOperator (
-  project,
+  project = identity,
   resultSelector,
   concurrent = Number.POSITIVE_INFINITY
 ) {

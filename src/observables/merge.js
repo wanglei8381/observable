@@ -26,6 +26,6 @@ export const merge = function (...observables) {
   }
 
   return new ArrayObservable(observables, scheduler).lift(
-    mergeMap(observable => observable, null, concurrent)
+    mergeMap(undefined, undefined, concurrent)
   )
 }

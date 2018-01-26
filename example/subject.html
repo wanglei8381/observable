@@ -12,14 +12,20 @@
 <body>
 <script src="https://cdn.bootcss.com/rxjs/5.5.6/Rx.js"></script>
 <script>
-var subject = new Rx.Subject()
-var observable = subject.asObservable()
-subject.next(1)
-observable.subscribe((val) => {
-  console.log('next:', val)
+var e1Subscribed = false
+var e1 = Rx.Observable.defer(function () {
+  e1Subscribed = true
+  console.log('3')
+  return Rx.Observable.of('a')
 })
 
-subject.next(2)
+Rx.Observable.concat(e1, Rx.Scheduler.async).subscribe({
+  complete: function () {
+    console.log('1', e1Subscribed)
+  }
+})
+
+console.log('2', e1Subscribed)
 </script>
 </body>
 </html>

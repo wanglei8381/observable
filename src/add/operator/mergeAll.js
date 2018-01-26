@@ -1,6 +1,4 @@
-import { mergeMapOperator } from '../../operators/mergeMap'
+import { mergeAll } from '../../operators/mergeAll'
 import { Observable } from '../../Observable'
 
-Observable.prototype.mergeAll = function (concurrent) {
-  return this.lift(mergeMapOperator(observable => observable, null, concurrent))
-}
+Observable.prototype.mergeAll = mergeAll
