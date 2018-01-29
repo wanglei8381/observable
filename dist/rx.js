@@ -122,6 +122,34 @@ var possibleConstructorReturn = function (self, call) {
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var toConsumableArray = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+    return arr2;
+  } else {
+    return Array.from(arr);
+  }
+};
+
 var objectProto = Object.prototype;
 var toString = function toString(obj) {
   return objectProto.toString.call(obj);
@@ -451,11 +479,14 @@ function wrapOperator(operator) {
     }
 
     var subscrition = toSubscriber(_subscrition);
-    // 先进行添加
     observer.add(subscrition);
     this.source.subscribe(subscrition);
   };
 }
+
+var identity = function identity($) {
+  return $;
+};
 
 var uid = 0;
 var Subscription = function () {
@@ -516,7 +547,7 @@ var Subscription = function () {
           observers = this.observers;
 
       if (!_set.has(observer._uid)) {
-        _set.add(uid);
+        _set.add(observer._uid);
         observers.push(observer);
       }
     }
@@ -607,7 +638,6 @@ var Subscriber = function (_Subscription) {
     }
 
     _this.isStopped = false;
-    _this.readyState = 0;
     return _this;
   }
 
@@ -616,7 +646,6 @@ var Subscriber = function (_Subscription) {
     value: function next(val) {
       if (this.isStopped) return;
       try {
-        this.readyState = 1;
         this._next(val);
       } catch (e) {
         this.unsubscribe();
@@ -629,7 +658,6 @@ var Subscriber = function (_Subscription) {
     value: function error(e) {
       if (this.isStopped) return;
       try {
-        this.readyState = 2;
         this._error(e);
       } catch (e) {
         this.unsubscribe();
@@ -642,7 +670,6 @@ var Subscriber = function (_Subscription) {
     value: function complete() {
       if (this.isStopped) return;
       try {
-        this.readyState = 3;
         this._complete();
       } catch (e) {
         this.unsubscribe();
@@ -959,7 +986,11 @@ var of = function of() {
   return new EmptyObservable(scheduler);
 };
 
+Observable.of = of;
+
 var empty = EmptyObservable.create;
+
+Observable.empty = empty;
 
 var ErrorObservable = function (_Observable) {
   inherits(ErrorObservable, _Observable);
@@ -1006,6 +1037,8 @@ var ErrorObservable = function (_Observable) {
 }(Observable);
 
 var throwObservable = ErrorObservable.create;
+
+Observable.throw = throwObservable;
 
 var PromiseObservable = function (_Observable) {
   inherits(PromiseObservable, _Observable);
@@ -1097,6 +1130,8 @@ var PromiseObservable = function (_Observable) {
 }(Observable);
 
 var fromPromise = PromiseObservable.create;
+
+Observable.fromPromise = fromPromise;
 
 var ArrayLikeObservable = function (_Observable) {
   inherits(ArrayLikeObservable, _Observable);
@@ -1508,14 +1543,6 @@ var FromObservable = function (_Observable) {
 
 var fromObservable = FromObservable.create;
 
-Observable.of = of;
-
-Observable.empty = empty;
-
-Observable.throw = throwObservable;
-
-Observable.fromPromise = fromPromise;
-
 Observable.from = fromObservable;
 
 Observable.range = function (start, end, scheduler) {
@@ -1524,25 +1551,6 @@ Observable.range = function (start, end, scheduler) {
     arr.push(i);
   }
   return new ArrayObservable(arr, scheduler);
-};
-
-var doOperator = function doOperator(_next, _error, _complete) {
-  return function (observer) {
-    return {
-      next: function next(val) {
-        _next && _next(val);
-        observer.next(val);
-      },
-      error: function error(e) {
-        _error && _error(e);
-        observer.error(e);
-      },
-      complete: function complete() {
-        _complete && _complete();
-        observer.complete();
-      }
-    };
-  };
 };
 
 var Action = function (_Subscription) {
@@ -1674,45 +1682,6 @@ var AsyncAction = function (_Action) {
   return AsyncAction;
 }(Action);
 
-var AsapAction = function (_AsyncAction) {
-  inherits(AsapAction, _AsyncAction);
-
-  function AsapAction() {
-    classCallCheck(this, AsapAction);
-    return possibleConstructorReturn(this, (AsapAction.__proto__ || Object.getPrototypeOf(AsapAction)).apply(this, arguments));
-  }
-
-  createClass(AsapAction, [{
-    key: 'requestAsyncId',
-    value: function requestAsyncId(scheduler, id) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      if (delay != null && delay > 0) {
-        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
-      }
-      scheduler.actions.push(this);
-      return scheduler.scheduled || (scheduler.scheduled = setImmediate(scheduler.flush.bind(scheduler, null)));
-    }
-  }, {
-    key: 'recycleAsyncId',
-    value: function recycleAsyncId(scheduler, id) {
-      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
-        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'recycleAsyncId', this).call(this, scheduler, id, delay);
-      }
-
-      if (scheduler.actions.length === 0) {
-        clearImmediate(id);
-        scheduler.scheduled = undefined;
-      }
-
-      return undefined;
-    }
-  }]);
-  return AsapAction;
-}(AsyncAction);
-
 var AsyncScheduler = function (_Scheduler) {
   inherits(AsyncScheduler, _Scheduler);
 
@@ -1759,6 +1728,516 @@ var AsyncScheduler = function (_Scheduler) {
   return AsyncScheduler;
 }(Scheduler);
 
+var async = new AsyncScheduler(AsyncAction);
+
+var TimerObservable = function (_Observable) {
+  inherits(TimerObservable, _Observable);
+
+  function TimerObservable() {
+    var dueTime = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    var period = arguments[1];
+    var scheduler = arguments[2];
+    classCallCheck(this, TimerObservable);
+
+    var _this = possibleConstructorReturn(this, (TimerObservable.__proto__ || Object.getPrototypeOf(TimerObservable)).call(this));
+
+    _this.period = -1;
+    if (isNumber(period)) {
+      _this.period = period;
+    } else if (isScheduler(period)) {
+      scheduler = period;
+    }
+
+    _this.scheduler = isScheduler(scheduler) ? scheduler : async;
+
+    _this.dueTime = isDate(dueTime) ? +dueTime - scheduler.now() : dueTime;
+    return _this;
+  }
+
+  createClass(TimerObservable, [{
+    key: '_subscribe',
+    value: function _subscribe(observer) {
+      return this.scheduler.schedule(TimerObservable.dispatch, this.dueTime, {
+        index: 0,
+        observer: observer,
+        period: this.period
+      });
+    }
+  }], [{
+    key: 'dispatch',
+    value: function dispatch(state) {
+      var observer = state.observer,
+          period = state.period,
+          index = state.index;
+
+      observer.next(index);
+      if (observer.closed) return;
+      if (period === -1) return observer.complete();
+      state.index = index + 1;
+      this.schedule(state, period);
+    }
+  }, {
+    key: 'create',
+    value: function create(initialDelay, period, scheduler) {
+      return new TimerObservable(initialDelay, period, scheduler);
+    }
+  }]);
+  return TimerObservable;
+}(Observable);
+
+var timer = TimerObservable.create;
+
+Observable.timer = timer;
+
+var interval = function interval(period, scheduler) {
+  period = period < 0 ? 0 : period;
+  return TimerObservable.create(period, period, scheduler);
+};
+
+Observable.interval = interval;
+
+var OuterSubscriber = function (_Subscriber) {
+  inherits(OuterSubscriber, _Subscriber);
+
+  function OuterSubscriber() {
+    classCallCheck(this, OuterSubscriber);
+    return possibleConstructorReturn(this, (OuterSubscriber.__proto__ || Object.getPrototypeOf(OuterSubscriber)).apply(this, arguments));
+  }
+
+  createClass(OuterSubscriber, [{
+    key: 'notifyNext',
+    value: function notifyNext(outerValue, innerValue, outerIndex, innerIndex, innerSub) {
+      this.destination.next(innerValue);
+    }
+  }, {
+    key: 'notifyError',
+    value: function notifyError(error, innerSub) {
+      this.destination.error(error);
+    }
+  }, {
+    key: 'notifyComplete',
+    value: function notifyComplete(innerSub) {
+      this.destination.complete();
+    }
+  }]);
+  return OuterSubscriber;
+}(Subscriber);
+
+var InnerSubscriber = function (_Subscriber) {
+  inherits(InnerSubscriber, _Subscriber);
+
+  function InnerSubscriber(parent, outerValue, outerIndex) {
+    classCallCheck(this, InnerSubscriber);
+
+    var _this = possibleConstructorReturn(this, (InnerSubscriber.__proto__ || Object.getPrototypeOf(InnerSubscriber)).call(this));
+
+    _this.parent = parent;
+    _this.outerValue = outerValue;
+    _this.outerIndex = outerIndex;
+    _this.index = 0;
+    return _this;
+  }
+
+  createClass(InnerSubscriber, [{
+    key: '_next',
+    value: function _next(value) {
+      this.parent.notifyNext(this.outerValue, value, this.outerIndex, this.index++, this);
+    }
+  }, {
+    key: '_error',
+    value: function _error(error) {
+      this.parent.notifyError(error, this);
+      this.unsubscribe();
+    }
+  }, {
+    key: '_complete',
+    value: function _complete() {
+      this.parent.notifyComplete(this);
+      this.unsubscribe();
+    }
+  }]);
+  return InnerSubscriber;
+}(Subscriber);
+
+function subscribeToResult(outerSubscriber, result, outerValue, outerIndex) {
+  var destination = new InnerSubscriber(outerSubscriber, outerValue, outerIndex);
+  if (destination.closed) return null;
+  if (result instanceof Observable) {
+    if (result._isScalar) {
+      destination.next(result.value);
+      destination.complete();
+      return null;
+    } else {
+      return result.subscribe(destination);
+    }
+  } else if (isArrayLike(result)) {
+    for (var i = 0, len = result.length; i < len && !destination.closed; i++) {
+      destination.next(result[i]);
+    }
+    if (!destination.closed) {
+      destination.complete();
+    }
+  } else if (isPromise(result)) {
+    result.then(function (value) {
+      if (!destination.closed) {
+        destination.next(value);
+        destination.complete();
+      }
+    }, function (err) {
+      return destination.error(err);
+    }).catch(function (err) {
+      setTimeout(function () {
+        throw err;
+      });
+    });
+    return destination;
+  } else if (result && typeof result[iterator] === 'function') {
+    var iterator$$1 = result[iterator]();
+    do {
+      var item = iterator$$1.next();
+      if (item.done) {
+        destination.complete();
+        break;
+      }
+      destination.next(item.value);
+      if (destination.closed) {
+        break;
+      }
+    } while (true);
+  } else if (result && typeof result[observable] === 'function') {
+    var obs = result[observable]();
+    if (typeof obs.subscribe !== 'function') {
+      destination.error(new TypeError('Provided object does not correctly implement Symbol.observable'));
+    } else {
+      return obs.subscribe(new InnerSubscriber(outerSubscriber, outerValue, outerIndex));
+    }
+  } else {
+    var value = isObject(result) ? 'an invalid object' : '\'' + result + '\'';
+    var msg = 'You provided ' + value + ' where a stream was expected.' + ' You can provide an Observable, Promise, Array, or Iterable.';
+    destination.error(new TypeError(msg));
+  }
+  return null;
+}
+
+/**
+ * 由当前流触发多个流按时间穿插合并到一起
+ * 具体用途：
+ * 1: 当多个流做同样的事时，可以进行组合，比如小程序中列表页面刷新来自手动下来、进入页面、动态添加数据，可以组合成一个
+ *
+ *
+ 触发时间节点
+ hot: 'a---b-----------c-------d-------|       '
+ a_c: '----a---a---a---(a|)                    '
+ b_c: '    ----b---b---(b|)                    '
+ c_c: '                ----c---c---c---c---(c|)'
+ d_c: '                        ----(d|)        '
+ exp: '----a---(ab)(ab)(ab)c---c---(cd)c---(c|)'
+ sub: '^                                   !   '
+ *
+ * @param project 待合并的流
+ * @param resultSelector 对流的值进行处理
+ * @param concurrent 同时并发的数量
+ * @returns {function(*=): MergeMapSubscriber}
+ */
+function mergeMapOperator() {
+  var project = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : identity;
+  var resultSelector = arguments[1];
+  var concurrent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : Number.POSITIVE_INFINITY;
+
+  if (isNumber(resultSelector)) {
+    concurrent = resultSelector;
+    resultSelector = null;
+  }
+  return function (observer) {
+    return new MergeMapSubscriber(observer, project, resultSelector, concurrent);
+  };
+}
+
+var MergeMapSubscriber = function (_OuterSubscriber) {
+  inherits(MergeMapSubscriber, _OuterSubscriber);
+
+  function MergeMapSubscriber(destination, project, resultSelector, concurrent) {
+    classCallCheck(this, MergeMapSubscriber);
+
+    var _this = possibleConstructorReturn(this, (MergeMapSubscriber.__proto__ || Object.getPrototypeOf(MergeMapSubscriber)).call(this, destination));
+
+    _this.project = project;
+    _this.resultSelector = resultSelector;
+    _this.concurrent = concurrent;
+    _this.index = 0;
+    _this.hasCompleted = false;
+    _this.buffer = [];
+    _this.active = 0;
+    return _this;
+  }
+
+  createClass(MergeMapSubscriber, [{
+    key: '_next',
+    value: function _next(value) {
+      if (this.active < this.concurrent) {
+        this._tryNext(value);
+      } else {
+        this.buffer.push(value);
+      }
+    }
+  }, {
+    key: '_tryNext',
+    value: function _tryNext(value) {
+      try {
+        var index = this.index++;
+        var result = this.project(value, index);
+        this.active++;
+        this._innerSub(result, value, index);
+      } catch (e) {
+        get(MergeMapSubscriber.prototype.__proto__ || Object.getPrototypeOf(MergeMapSubscriber.prototype), '_error', this).call(this, e);
+      }
+    }
+  }, {
+    key: '_innerSub',
+    value: function _innerSub(ish, value, index) {
+      this.add(subscribeToResult(this, ish, value, index));
+    }
+  }, {
+    key: '_complete',
+    value: function _complete() {
+      this.hasCompleted = true;
+      // 所有的都结束了
+      if (this.active === 0 && this.buffer.length === 0) {
+        this.destination.complete();
+      }
+    }
+  }, {
+    key: 'notifyNext',
+    value: function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      if (this.resultSelector) {
+        this._notifyResultSelector(outerValue, innerValue, outerIndex, innerIndex);
+      } else {
+        this.destination.next(innerValue);
+      }
+    }
+  }, {
+    key: '_notifyResultSelector',
+    value: function _notifyResultSelector(outerValue, innerValue, outerIndex, innerIndex) {
+      try {
+        var result = this.resultSelector(outerValue, innerValue, outerIndex, innerIndex);
+        this.destination.next(result);
+      } catch (err) {
+        this.destination.error(err);
+      }
+    }
+  }, {
+    key: 'notifyComplete',
+    value: function notifyComplete(innerSub) {
+      var buffer = this.buffer;
+      this.remove(innerSub);
+      this.active--;
+      if (buffer.length > 0) {
+        this._next(buffer.shift());
+      } else if (this.active === 0 && this.hasCompleted) {
+        this.destination.complete();
+      }
+    }
+  }]);
+  return MergeMapSubscriber;
+}(OuterSubscriber);
+
+var merge = function merge() {
+  for (var _len = arguments.length, observables = Array(_len), _key = 0; _key < _len; _key++) {
+    observables[_key] = arguments[_key];
+  }
+
+  var scheduler = observables[observables.length - 1];
+  if (isScheduler(scheduler)) {
+    observables.pop();
+  } else {
+    scheduler = null;
+  }
+
+  var concurrent = observables[observables.length - 1];
+  if (isNumber(concurrent)) {
+    observables.pop();
+  } else {
+    concurrent = Number.POSITIVE_INFINITY;
+  }
+
+  if (scheduler === null && observables.length === 1 && observables[0] instanceof Observable) {
+    return observables[0];
+  }
+
+  return new ArrayObservable(observables, scheduler).lift(mergeMapOperator(undefined, undefined, concurrent));
+};
+
+Observable.merge = merge;
+
+var concat = function concat() {
+  for (var _len = arguments.length, observables = Array(_len), _key = 0; _key < _len; _key++) {
+    observables[_key] = arguments[_key];
+  }
+
+  var length = observables.length;
+  if (length === 1) {
+    return fromObservable(observables[0]);
+  }
+
+  if (isScheduler(observables[length - 1])) {
+    observables.splice(length - 1, 0, 1);
+  } else {
+    observables.push(1);
+  }
+
+  return merge.apply(undefined, observables);
+};
+
+Observable.concat = concat;
+
+var DeferObservable = function (_Observable) {
+  inherits(DeferObservable, _Observable);
+
+  function DeferObservable(observableFactory) {
+    classCallCheck(this, DeferObservable);
+
+    var _this = possibleConstructorReturn(this, (DeferObservable.__proto__ || Object.getPrototypeOf(DeferObservable)).call(this));
+
+    _this.observableFactory = observableFactory;
+    return _this;
+  }
+
+  createClass(DeferObservable, [{
+    key: '_subscribe',
+    value: function _subscribe(subscriber) {
+      return new DeferSubscriber(subscriber, this.observableFactory);
+    }
+  }], [{
+    key: 'create',
+    value: function create(observableFactory) {
+      return new DeferObservable(observableFactory);
+    }
+  }]);
+  return DeferObservable;
+}(Observable);
+
+var DeferSubscriber = function (_OuterSubscriber) {
+  inherits(DeferSubscriber, _OuterSubscriber);
+
+  function DeferSubscriber(destination, factory) {
+    classCallCheck(this, DeferSubscriber);
+
+    var _this2 = possibleConstructorReturn(this, (DeferSubscriber.__proto__ || Object.getPrototypeOf(DeferSubscriber)).call(this, destination));
+
+    _this2.factory = factory;
+    _this2.tryDefer();
+    return _this2;
+  }
+
+  createClass(DeferSubscriber, [{
+    key: 'tryDefer',
+    value: function tryDefer() {
+      try {
+        this._callFactory();
+      } catch (err) {
+        this._error(err);
+      }
+    }
+  }, {
+    key: '_callFactory',
+    value: function _callFactory() {
+      var result = this.factory();
+      if (result) {
+        this.add(subscribeToResult(this, result));
+      }
+    }
+  }]);
+  return DeferSubscriber;
+}(OuterSubscriber);
+
+Observable.defer = DeferObservable.create;
+
+var NeverObservable = function (_Observable) {
+  inherits(NeverObservable, _Observable);
+
+  function NeverObservable() {
+    classCallCheck(this, NeverObservable);
+    return possibleConstructorReturn(this, (NeverObservable.__proto__ || Object.getPrototypeOf(NeverObservable)).apply(this, arguments));
+  }
+
+  createClass(NeverObservable, [{
+    key: '_subscribe',
+    value: function _subscribe() {}
+  }], [{
+    key: 'create',
+    value: function create() {
+      return new NeverObservable();
+    }
+  }]);
+  return NeverObservable;
+}(Observable);
+
+var never = NeverObservable.create;
+
+Observable.never = never;
+
+var doOperator = function doOperator(_next, _error, _complete) {
+  return function (observer) {
+    return {
+      next: function next(val) {
+        _next && _next(val);
+        observer.next(val);
+      },
+      error: function error(e) {
+        _error && _error(e);
+        observer.error(e);
+      },
+      complete: function complete() {
+        _complete && _complete();
+        observer.complete();
+      }
+    };
+  };
+};
+
+Observable.prototype.do = function (nextOrObserver, error, complete) {
+  return this.lift(doOperator(nextOrObserver, error, complete));
+};
+
+var AsapAction = function (_AsyncAction) {
+  inherits(AsapAction, _AsyncAction);
+
+  function AsapAction() {
+    classCallCheck(this, AsapAction);
+    return possibleConstructorReturn(this, (AsapAction.__proto__ || Object.getPrototypeOf(AsapAction)).apply(this, arguments));
+  }
+
+  createClass(AsapAction, [{
+    key: 'requestAsyncId',
+    value: function requestAsyncId(scheduler, id) {
+      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      if (delay != null && delay > 0) {
+        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'requestAsyncId', this).call(this, scheduler, id, delay);
+      }
+      scheduler.actions.push(this);
+      return scheduler.scheduled || (scheduler.scheduled = setImmediate(scheduler.flush.bind(scheduler, null)));
+    }
+  }, {
+    key: 'recycleAsyncId',
+    value: function recycleAsyncId(scheduler, id) {
+      var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      if (delay !== null && delay > 0 || delay === null && this.delay > 0) {
+        return get(AsapAction.prototype.__proto__ || Object.getPrototypeOf(AsapAction.prototype), 'recycleAsyncId', this).call(this, scheduler, id, delay);
+      }
+
+      if (scheduler.actions.length === 0) {
+        clearImmediate(id);
+        scheduler.scheduled = undefined;
+      }
+
+      return undefined;
+    }
+  }]);
+  return AsapAction;
+}(AsyncAction);
+
 var AsapScheduler = function (_AsyncScheduler) {
   inherits(AsapScheduler, _AsyncScheduler);
 
@@ -1793,8 +2272,6 @@ var AsapScheduler = function (_AsyncScheduler) {
 }(AsyncScheduler);
 
 var asap = new AsapScheduler(AsapAction);
-
-var async = new AsyncScheduler(AsyncAction);
 
 var AnimationFrameAction = function (_AsyncAction) {
   inherits(AnimationFrameAction, _AsyncAction);
@@ -2020,6 +2497,10 @@ var DelaySubscriber = function (_Subscriber) {
   return DelaySubscriber;
 }(Subscriber);
 
+Observable.prototype.delay = function (nextOrObserver, error, complete) {
+  return this.lift(delayOperator(nextOrObserver, error, complete));
+};
+
 function takeOperator() {
   var number = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : Number.POSITIVE_INFINITY;
 
@@ -2046,6 +2527,10 @@ function takeOperator() {
   };
 }
 
+Observable.prototype.take = function (number) {
+  return this.lift(takeOperator(number));
+};
+
 function filterOperator(predicate, context) {
   var index = 0;
   return function (observer) {
@@ -2060,6 +2545,10 @@ function filterOperator(predicate, context) {
     };
   };
 }
+
+Observable.prototype.filter = function (predicate, context) {
+  return this.lift(filterOperator(predicate, context));
+};
 
 function mapOperator(project, context) {
   if (typeof project !== 'function') {
@@ -2077,228 +2566,13 @@ function mapOperator(project, context) {
   };
 }
 
-var OuterSubscriber = function (_Subscriber) {
-  inherits(OuterSubscriber, _Subscriber);
+Observable.prototype.map = function (project, context) {
+  return this.lift(mapOperator(project, context));
+};
 
-  function OuterSubscriber() {
-    classCallCheck(this, OuterSubscriber);
-    return possibleConstructorReturn(this, (OuterSubscriber.__proto__ || Object.getPrototypeOf(OuterSubscriber)).apply(this, arguments));
-  }
-
-  createClass(OuterSubscriber, [{
-    key: 'notifyNext',
-    value: function notifyNext(outerValue, innerValue, outerIndex, innerIndex, innerSub) {
-      this.destination.next(innerValue);
-    }
-  }, {
-    key: 'notifyError',
-    value: function notifyError(error, innerSub) {
-      this.destination.error(error);
-    }
-  }, {
-    key: 'notifyComplete',
-    value: function notifyComplete(innerSub) {
-      this.destination.complete();
-    }
-  }]);
-  return OuterSubscriber;
-}(Subscriber);
-
-var InnerSubscriber = function (_Subscriber) {
-  inherits(InnerSubscriber, _Subscriber);
-
-  function InnerSubscriber(parent, outerValue, outerIndex) {
-    classCallCheck(this, InnerSubscriber);
-
-    var _this = possibleConstructorReturn(this, (InnerSubscriber.__proto__ || Object.getPrototypeOf(InnerSubscriber)).call(this));
-
-    _this.parent = parent;
-    _this.outerValue = outerValue;
-    _this.outerIndex = outerIndex;
-    _this.index = 0;
-    return _this;
-  }
-
-  createClass(InnerSubscriber, [{
-    key: '_next',
-    value: function _next(value) {
-      this.parent.notifyNext(this.outerValue, value, this.outerIndex, this.index++, this);
-    }
-  }, {
-    key: '_error',
-    value: function _error(error) {
-      this.parent.notifyError(error, this);
-      this.unsubscribe();
-    }
-  }, {
-    key: '_complete',
-    value: function _complete() {
-      this.parent.notifyComplete(this);
-      this.unsubscribe();
-    }
-  }]);
-  return InnerSubscriber;
-}(Subscriber);
-
-function subscribeToResult(outerSubscriber, result, outerValue, outerIndex) {
-  var destination = new InnerSubscriber(outerSubscriber, outerValue, outerIndex);
-  if (destination.closed) return null;
-  if (result instanceof Observable) {
-    if (result._isScalar) {
-      destination.next(result.value);
-      destination.complete();
-      return null;
-    } else {
-      return result.subscribe(destination);
-    }
-  } else if (isArrayLike(result)) {
-    for (var i = 0, len = result.length; i < len && !destination.closed; i++) {
-      destination.next(result[i]);
-    }
-    if (!destination.closed) {
-      destination.complete();
-    }
-  } else if (isPromise(result)) {
-    result.then(function (value) {
-      if (!destination.closed) {
-        destination.next(value);
-        destination.complete();
-      }
-    }, function (err) {
-      return destination.error(err);
-    }).catch(function (err) {
-      setTimeout(function () {
-        throw err;
-      });
-    });
-    return destination;
-  } else if (result && typeof result[iterator] === 'function') {
-    var iterator$$1 = result[iterator]();
-    do {
-      var item = iterator$$1.next();
-      if (item.done) {
-        destination.complete();
-        break;
-      }
-      destination.next(item.value);
-      if (destination.closed) {
-        break;
-      }
-    } while (true);
-  } else if (result && typeof result[observable] === 'function') {
-    var obs = result[observable]();
-    if (typeof obs.subscribe !== 'function') {
-      destination.error(new TypeError('Provided object does not correctly implement Symbol.observable'));
-    } else {
-      return obs.subscribe(new InnerSubscriber(outerSubscriber, outerValue, outerIndex));
-    }
-  } else {
-    var value = isObject(result) ? 'an invalid object' : '\'' + result + '\'';
-    var msg = 'You provided ' + value + ' where a stream was expected.' + ' You can provide an Observable, Promise, Array, or Iterable.';
-    destination.error(new TypeError(msg));
-  }
-  return null;
-}
-
-function mergeMapOperator(project, resultSelector) {
-  var concurrent = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : Number.POSITIVE_INFINITY;
-
-  if (isNumber(resultSelector)) {
-    concurrent = resultSelector;
-    resultSelector = null;
-  }
-  return function (observer) {
-    return new MergeMapSubscriber(observer, project, resultSelector, concurrent);
-  };
-}
-
-var MergeMapSubscriber = function (_OuterSubscriber) {
-  inherits(MergeMapSubscriber, _OuterSubscriber);
-
-  function MergeMapSubscriber(destination, project, resultSelector, concurrent) {
-    classCallCheck(this, MergeMapSubscriber);
-
-    var _this = possibleConstructorReturn(this, (MergeMapSubscriber.__proto__ || Object.getPrototypeOf(MergeMapSubscriber)).call(this, destination));
-
-    _this.project = project;
-    _this.resultSelector = resultSelector;
-    _this.concurrent = concurrent;
-    _this.index = 0;
-    _this.hasCompleted = false;
-    _this.buffer = [];
-    _this.active = 0;
-    return _this;
-  }
-
-  createClass(MergeMapSubscriber, [{
-    key: '_next',
-    value: function _next(value) {
-      if (this.active < this.concurrent) {
-        this._tryNext(value);
-      } else {
-        this.buffer.push(value);
-      }
-    }
-  }, {
-    key: '_tryNext',
-    value: function _tryNext(value) {
-      try {
-        var index = this.index++;
-        var result = this.project(value, index);
-        this.active++;
-        this._innerSub(result, value, index);
-      } catch (e) {
-        get(MergeMapSubscriber.prototype.__proto__ || Object.getPrototypeOf(MergeMapSubscriber.prototype), '_error', this).call(this, e);
-      }
-    }
-  }, {
-    key: '_innerSub',
-    value: function _innerSub(ish, value, index) {
-      this.add(subscribeToResult(this, ish, value, index));
-    }
-  }, {
-    key: '_complete',
-    value: function _complete() {
-      this.hasCompleted = true;
-      // 所有的都结束了
-      if (this.active === 0 && this.buffer.length === 0) {
-        this.destination.complete();
-      }
-    }
-  }, {
-    key: 'notifyNext',
-    value: function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
-      if (this.resultSelector) {
-        this._notifyResultSelector(outerValue, innerValue, outerIndex, innerIndex);
-      } else {
-        this.destination.next(innerValue);
-      }
-    }
-  }, {
-    key: '_notifyResultSelector',
-    value: function _notifyResultSelector(outerValue, innerValue, outerIndex, innerIndex) {
-      try {
-        var result = this.resultSelector(outerValue, innerValue, outerIndex, innerIndex);
-        this.destination.next(result);
-      } catch (err) {
-        this.destination.error(err);
-      }
-    }
-  }, {
-    key: 'notifyComplete',
-    value: function notifyComplete(innerSub) {
-      var buffer = this.buffer;
-      this.remove(innerSub);
-      this.active--;
-      if (buffer.length > 0) {
-        this._next(buffer.shift());
-      } else if (this.active === 0 && this.hasCompleted) {
-        this.destination.complete();
-      }
-    }
-  }]);
-  return MergeMapSubscriber;
-}(OuterSubscriber);
+Observable.prototype.mergeMap = function (project, resultSelector, concurrent) {
+  return this.lift(mergeMapOperator(project, resultSelector, concurrent));
+};
 
 function distinctUntilChangedOperator(compare, keySelector) {
   var selectable = isFunction(keySelector);
@@ -2329,6 +2603,10 @@ function distinctUntilChangedOperator(compare, keySelector) {
     };
   };
 }
+
+Observable.prototype.distinctUntilChanged = function (compare, keySelector) {
+  return this.lift(distinctUntilChangedOperator(compare, keySelector));
+};
 
 function startWithOperator() {
   for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -2371,56 +2649,54 @@ function startWithOperator() {
   };
 }
 
-function combineLatestOperator(others, project) {
+Observable.prototype.startWith = function () {
+  return this.lift(startWithOperator.apply(undefined, arguments));
+};
+
+var none = {};
+function combineLatestOperator(project) {
   return function (observer) {
-    return new combineLatestSubscriber(observer, others, project);
+    return new CombineLatestSubscriber(observer, project);
   };
 }
 
-var combineLatestSubscriber = function (_Subscriber) {
-  inherits(combineLatestSubscriber, _Subscriber);
+var CombineLatestSubscriber = function (_OuterSubscriber) {
+  inherits(CombineLatestSubscriber, _OuterSubscriber);
 
-  function combineLatestSubscriber(destination, others, project) {
-    classCallCheck(this, combineLatestSubscriber);
+  function CombineLatestSubscriber(destination, project) {
+    classCallCheck(this, CombineLatestSubscriber);
 
-    var _this = possibleConstructorReturn(this, (combineLatestSubscriber.__proto__ || Object.getPrototypeOf(combineLatestSubscriber)).call(this, destination));
+    var _this = possibleConstructorReturn(this, (CombineLatestSubscriber.__proto__ || Object.getPrototypeOf(CombineLatestSubscriber)).call(this, destination));
 
-    _this.streams = isArray(others) ? others : [others];
-    _this.initState();
     _this.project = project;
-    _this.allHasValue = false;
-    _this.observeOnStreams();
+    _this.observables = [];
+    _this.values = [];
+    _this.active = 0;
+    _this.toRespond = 0;
     return _this;
   }
 
-  createClass(combineLatestSubscriber, [{
-    key: 'initState',
-    value: function initState() {
-      var size = this.size = this.streams.length + 1;
-      var states = this.states = new Array(this.size);
-      for (var i = 0; i < size; i++) {
-        states[i] = {
-          hasValue: false,
-          value: undefined,
-          isStopped: false
-        };
-      }
-    }
-  }, {
+  createClass(CombineLatestSubscriber, [{
     key: '_next',
-    value: function _next(value) {
-      this.setNext(0, value);
-    }
-  }, {
-    key: '_error',
-    value: function _error(err) {
-      this.notifyError(err);
+    value: function _next(observable) {
+      this.values.push(none);
+      this.observables.push(observable);
     }
   }, {
     key: '_complete',
     value: function _complete() {
-      this.setComplete(0);
-      this.unsubscribe();
+      var observables = this.observables;
+      var len = observables.length;
+      if (len === 0) {
+        this.destination.complete();
+      } else {
+        this.active = len;
+        this.toRespond = len;
+        for (var i = 0; i < len; i++) {
+          var observable = observables[i];
+          this.add(subscribeToResult(this, observable, observable, i));
+        }
+      }
     }
   }, {
     key: '_tryProject',
@@ -2429,117 +2705,179 @@ var combineLatestSubscriber = function (_Subscriber) {
         var data = this.project.apply(this, values);
         this.destination.next(data);
       } catch (err) {
-        this.notifyError(err);
+        this.destination.error(err);
       }
     }
   }, {
     key: 'notifyNext',
-    value: function notifyNext() {
-      var states = this.states,
-          size = this.size;
+    value: function notifyNext(outerValue, innerValue, outerIndex, innerIndex) {
+      var values = this.values;
+      var oldVal = values[outerIndex];
+      var toRespond = !this.toRespond ? 0 : oldVal === none ? --this.toRespond : this.toRespond;
 
-      if (!this.allHasValue) {
-        var res = states.filter(function (state) {
-          return state.hasValue;
-        });
-        this.allHasValue = res.length === size;
-      }
+      values[outerIndex] = innerValue;
 
-      if (this.allHasValue) {
-        var values = states.map(function (state) {
-          return state.value;
-        });
-        this._tryProject(values);
+      if (toRespond === 0) {
+        if (this.project) {
+          this._tryProject(values);
+        } else {
+          this.destination.next(values.slice());
+        }
       }
     }
   }, {
     key: 'notifyComplete',
     value: function notifyComplete() {
-      var res = this.states.filter(function (state) {
-        return state.isStopped;
-      });
-      if (res.length === this.size) {
+      if ((this.active -= 1) === 0) {
         this.destination.complete();
       }
     }
-  }, {
-    key: 'notifyError',
-    value: function notifyError(err) {
-      this.destination.error(err);
-      this.streams.forEach(function (stream) {
-        stream.error(err);
-      });
-    }
-  }, {
-    key: 'setNext',
-    value: function setNext(index, value) {
-      var state = this.states[index];
-      state.hasValue = true;
-      state.value = value;
-      this.notifyNext();
-    }
-  }, {
-    key: 'setComplete',
-    value: function setComplete(index) {
-      this.states[index].isStopped = true;
-      this.notifyComplete();
-    }
-  }, {
-    key: 'observeOnStreams',
-    value: function observeOnStreams() {
-      var _this2 = this;
+  }]);
+  return CombineLatestSubscriber;
+}(OuterSubscriber);
 
-      var subs = this.streams.map(function (stream, index) {
-        return stream.subscribe(function (value) {
-          _this2.setNext(index + 1, value);
-        }, function (err) {
-          _this2.notifyError(err);
-        }, function () {
-          _this2.setComplete(index + 1);
-        });
-      });
+// 没想到把数据源进行整合成一起，这样做确实方便很多
+Observable.prototype.combineLatest = function (observables, project) {
+  var streams = isArray(observables) ? observables : [observables];
+  streams.unshift(this);
+  return new ArrayObservable(streams).lift(combineLatestOperator(project));
+};
 
-      this.add(subs);
+function mapToOperator(value) {
+  return function (observer) {
+    return function () {
+      observer.next(value);
+    };
+  };
+}
+
+Observable.prototype.mapTo = function (value) {
+  return this.lift(mapToOperator(value));
+};
+
+var mergeAll = function mergeAll(concurrent) {
+  return this.lift(mergeMapOperator(undefined, undefined, concurrent));
+};
+
+Observable.prototype.mergeAll = mergeAll;
+
+Observable.prototype.merge = function () {
+  for (var _len = arguments.length, observables = Array(_len), _key = 0; _key < _len; _key++) {
+    observables[_key] = arguments[_key];
+  }
+
+  return merge.call.apply(merge, [this, this].concat(observables));
+};
+
+var concat$1 = function concat$$1() {
+  for (var _len = arguments.length, observables = Array(_len), _key = 0; _key < _len; _key++) {
+    observables[_key] = arguments[_key];
+  }
+
+  observables.unshift(this);
+  return concat.apply(undefined, observables);
+};
+
+Observable.prototype.concat = concat$1;
+
+var concatAll = function concatAll() {
+  return mergeAll(1);
+};
+
+Observable.prototype.concatAll = concatAll;
+
+function concatMap(project, resultSelector) {
+  return mergeMapOperator(project, resultSelector, 1);
+}
+
+Observable.prototype.concatMap = function (project, resultSelector) {
+  return this.lift(concatMap(project, resultSelector));
+};
+
+var concatMapTo = function concatMapTo(innerObservable, resultSelector) {
+  return concatMap(function () {
+    return innerObservable;
+  }, resultSelector);
+};
+
+Observable.prototype.concatMapTo = function (innerObservable, resultSelector) {
+  return this.lift(concatMapTo(innerObservable, resultSelector));
+};
+
+function withLatestFromOperator(observables, project) {
+  return function (observer) {
+    return new WithLatestFromSubscriber(observer, observables, project);
+  };
+}
+
+var WithLatestFromSubscriber = function (_OuterSubscriber) {
+  inherits(WithLatestFromSubscriber, _OuterSubscriber);
+
+  function WithLatestFromSubscriber(destination, observables, project) {
+    classCallCheck(this, WithLatestFromSubscriber);
+
+    var _this = possibleConstructorReturn(this, (WithLatestFromSubscriber.__proto__ || Object.getPrototypeOf(WithLatestFromSubscriber)).call(this, destination));
+
+    _this.project = project;
+    _this.observables = observables;
+    _this.toRespond = [];
+    var len = observables.length;
+    _this.values = new Array(len);
+
+    for (var i = 0; i < len; i++) {
+      _this.toRespond.push(i);
+      var observable = observables[i];
+      _this.add(subscribeToResult(_this, observable, observable, i));
+    }
+    return _this;
+  }
+
+  createClass(WithLatestFromSubscriber, [{
+    key: 'notifyNext',
+    value: function notifyNext(outerValue, innerValue, outerIndex, innerIndex, innerSub) {
+      this.values[outerIndex] = innerValue;
+      var toRespond = this.toRespond;
+      if (toRespond.length > 0) {
+        var found = toRespond.indexOf(outerIndex);
+        if (found !== -1) {
+          toRespond.splice(found, 1);
+        }
+      }
+    }
+  }, {
+    key: 'notifyComplete',
+    value: function notifyComplete() {
+      // noop
+    }
+  }, {
+    key: '_next',
+    value: function _next(value) {
+      if (this.toRespond.length === 0) {
+        var args = [value].concat(toConsumableArray(this.values));
+        if (this.project) {
+          this._tryProject(args);
+        } else {
+          this.destination.next(args);
+        }
+      }
+    }
+  }, {
+    key: '_tryProject',
+    value: function _tryProject(args) {
+      var result = void 0;
+      try {
+        result = this.project.apply(this, args);
+      } catch (err) {
+        this.destination.error(err);
+        return;
+      }
+      this.destination.next(result);
     }
   }]);
-  return combineLatestSubscriber;
-}(Subscriber);
+  return WithLatestFromSubscriber;
+}(OuterSubscriber);
 
-Observable.prototype.do = function (nextOrObserver, error, complete) {
-  return this.lift(doOperator(nextOrObserver, error, complete));
-};
-
-Observable.prototype.delay = function (nextOrObserver, error, complete) {
-  return this.lift(delayOperator(nextOrObserver, error, complete));
-};
-
-Observable.prototype.take = function (number) {
-  return this.lift(takeOperator(number));
-};
-
-Observable.prototype.filter = function (predicate, context) {
-  return this.lift(filterOperator(predicate, context));
-};
-
-Observable.prototype.map = function (project, context) {
-  return this.lift(mapOperator(project, context));
-};
-
-Observable.prototype.mergeMap = function (project, resultSelector, concurrent) {
-  return this.lift(mergeMapOperator(project, resultSelector, concurrent));
-};
-
-Observable.prototype.distinctUntilChanged = function (compare, keySelector) {
-  return this.lift(distinctUntilChangedOperator(compare, keySelector));
-};
-
-Observable.prototype.startWith = function () {
-  return this.lift(startWithOperator.apply(undefined, arguments));
-};
-
-Observable.prototype.combineLatest = function (other, project) {
-  return this.lift(combineLatestOperator(other, project));
-};
+Observable.prototype.withLatestFrom = withLatestFromOperator;
 
 var Subject = function (_Observable) {
   inherits(Subject, _Observable);

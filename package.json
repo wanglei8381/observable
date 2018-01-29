@@ -10,7 +10,7 @@
     "build": "npm run clear && rollup -c build/rollup.config.js",
     "clear": "shx rm -rf ./dist",
     "lint": "eslint src test/unit",
-    "test": "jest",
+    "test": "jest test/unit/specs/operators/withLatestFrom.spec.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "format": "prettier-eslint --write \"src/**/*.js\" \"test/unit/**/*.js\"",
