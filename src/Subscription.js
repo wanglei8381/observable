@@ -60,6 +60,7 @@ export class Subscription {
     const { _set, observers } = this
     if (observer && observer._uid && _set.has(observer._uid)) {
       observers.splice(observers.indexOf(observer), 1)
+      _set.delete(observer._uid)
     }
   }
 
