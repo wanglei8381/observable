@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta lang="zh">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="renderer" content="webkit">
+  <meta name="description" content="">
+  <meta name="keyword" content="">
+  <title></title>
+</head>
+<body>
+<script src="https://cdn.bootcss.com/rxjs/5.5.6/Rx.js"></script>
+<script>
+var source = Rx.Observable.from([1, 2, 3]);
+var subject = new Rx.Subject();
+var multicasted = source.multicast(subject);
+
+// These are, under the hood, `subject.subscribe({...})`:
+multicasted.subscribe({
+  next: (v) => console.log('observerA: ' + v)
+});
+multicasted.subscribe({
+  next: (v) => console.log('observerB: ' + v)
+});
+
+// This is, under the hood, `source.subscribe(subject)`:
+multicasted.connect();
+console.log('==============')
+</script>
+<script>
+var source = Rx.Observable.interval(500);
+var subject = new Rx.Subject();
+var refCounted = source.multicast(subject).refCount();
+var subscription1, subscription2, subscriptionConnect;
+
+// This calls `connect()`, because
+// it is the first subscriber to `refCounted`
+console.log('observerA subscribed');
+subscription1 = refCounted.subscribe({
+  next: (v) => console.log('observerA: ' + v)
+});
+
+setTimeout(() => {
+  console.log('observerB subscribed');
+  subscription2 = refCounted.subscribe({
+    next: (v) => console.log('observerB: ' + v)
+  });
+}, 600);
+
+setTimeout(() => {
+  console.log('observerA unsubscribed');
+  subscription1.unsubscribe();
+}, 1200);
+
+// This is when the shared Observable execution will stop, because
+// `refCounted` would have no more subscribers after this
+setTimeout(() => {
+  console.log('observerB unsubscribed');
+  subscription2.unsubscribe();
+}, 2000);
+</script>
+</body>
+</html>
